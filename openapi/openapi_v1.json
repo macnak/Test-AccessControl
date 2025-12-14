@@ -1,0 +1,1055 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Test Access Control API",
+        "description": "API for testing various access control mechanisms including Basic Auth, API Key, Bearer Token, OAuth2, and file uploads",
+        "version": "1.0.0"
+    },
+    "definitions": {},
+    "paths": {
+        "/api/public/health": {
+            "get": {
+                "description": "Health check endpoint",
+                "tags": [
+                    "Public"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "status": {
+                                    "type": "string"
+                                },
+                                "timestamp": {
+                                    "type": "string"
+                                },
+                                "uptime": {
+                                    "type": "number"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/public/info": {
+            "get": {
+                "description": "API information endpoint",
+                "tags": [
+                    "Public"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "application": {
+                                    "type": "string"
+                                },
+                                "version": {
+                                    "type": "string"
+                                },
+                                "description": {
+                                    "type": "string"
+                                },
+                                "supportedAuthMethods": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/basic-auth/json": {
+            "get": {
+                "description": "Get JSON response with Basic Auth",
+                "tags": [
+                    "Basic Auth"
+                ],
+                "security": [
+                    {
+                        "basicAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "data": {
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Post JSON data with Basic Auth",
+                "tags": [
+                    "Basic Auth"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "value": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "basicAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "receivedData": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/basic-auth/text": {
+            "get": {
+                "description": "Get plain text response with Basic Auth",
+                "tags": [
+                    "Basic Auth"
+                ],
+                "security": [
+                    {
+                        "basicAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/basic-auth/xml": {
+            "get": {
+                "description": "Get XML response with Basic Auth",
+                "tags": [
+                    "Basic Auth"
+                ],
+                "security": [
+                    {
+                        "basicAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Post XML data with Basic Auth",
+                "tags": [
+                    "Basic Auth"
+                ],
+                "consumes": [
+                    "application/xml"
+                ],
+                "security": [
+                    {
+                        "basicAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "receivedData": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/basic-auth/form": {
+            "post": {
+                "description": "Post form data with Basic Auth",
+                "tags": [
+                    "Basic Auth"
+                ],
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "security": [
+                    {
+                        "basicAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "receivedData": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/api-key/json": {
+            "get": {
+                "description": "Get JSON response with API Key",
+                "tags": [
+                    "API Key"
+                ],
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "data": {
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Post JSON data with API Key",
+                "tags": [
+                    "API Key"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "value": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "receivedData": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/api-key/text": {
+            "get": {
+                "description": "Get plain text response with API Key",
+                "tags": [
+                    "API Key"
+                ],
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/api-key/xml": {
+            "get": {
+                "description": "Get XML response with API Key",
+                "tags": [
+                    "API Key"
+                ],
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Post XML data with API Key",
+                "tags": [
+                    "API Key"
+                ],
+                "consumes": [
+                    "application/xml"
+                ],
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "receivedData": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/api-key/form": {
+            "post": {
+                "description": "Post form data with API Key",
+                "tags": [
+                    "API Key"
+                ],
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "receivedData": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bearer-token/json": {
+            "get": {
+                "description": "Get JSON response with Bearer Token",
+                "tags": [
+                    "Bearer Token"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "data": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Post JSON data with Bearer Token",
+                "tags": [
+                    "Bearer Token"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "value": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "receivedData": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bearer-token/text": {
+            "get": {
+                "description": "Get plain text response with Bearer Token",
+                "tags": [
+                    "Bearer Token"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bearer-token/xml": {
+            "get": {
+                "description": "Get XML response with Bearer Token",
+                "tags": [
+                    "Bearer Token"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Post XML data with Bearer Token",
+                "tags": [
+                    "Bearer Token"
+                ],
+                "consumes": [
+                    "application/xml"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "receivedData": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bearer-token/form": {
+            "post": {
+                "description": "Post form data with Bearer Token",
+                "tags": [
+                    "Bearer Token"
+                ],
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "receivedData": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/oauth2/json": {
+            "get": {
+                "description": "Get JSON response with OAuth2",
+                "tags": [
+                    "OAuth2"
+                ],
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "tokenInfo": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "error": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Post JSON data with OAuth2",
+                "tags": [
+                    "OAuth2"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "value": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "receivedData": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/oauth2/text": {
+            "get": {
+                "description": "Get plain text response with OAuth2",
+                "tags": [
+                    "OAuth2"
+                ],
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/oauth2/xml": {
+            "get": {
+                "description": "Get XML response with OAuth2",
+                "tags": [
+                    "OAuth2"
+                ],
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Post XML data with OAuth2",
+                "tags": [
+                    "OAuth2"
+                ],
+                "consumes": [
+                    "application/xml"
+                ],
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "receivedData": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/oauth2/form": {
+            "post": {
+                "description": "Post form data with OAuth2",
+                "tags": [
+                    "OAuth2"
+                ],
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "security": [
+                    {
+                        "oauth2": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "receivedData": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/upload/single": {
+            "post": {
+                "description": "Upload a single file",
+                "tags": [
+                    "File Upload"
+                ],
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "file": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/upload/multiple": {
+            "post": {
+                "description": "Upload multiple files",
+                "tags": [
+                    "File Upload"
+                ],
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "files": {
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/upload/with-fields": {
+            "post": {
+                "description": "Upload files with additional form fields",
+                "tags": [
+                    "File Upload"
+                ],
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "security": [
+                    {
+                        "apiKey": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "fields": {
+                                    "type": "object"
+                                },
+                                "files": {
+                                    "type": "array"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "host": "0.0.0.0:3001",
+    "schemes": [
+        "http"
+    ],
+    "consumes": [
+        "application/json",
+        "application/xml",
+        "application/x-www-form-urlencoded"
+    ],
+    "produces": [
+        "application/json",
+        "application/xml",
+        "text/plain"
+    ],
+    "securityDefinitions": {
+        "basicAuth": {
+            "type": "basic",
+            "description": "Basic HTTP authentication. Use username and password."
+        },
+        "apiKey": {
+            "type": "apiKey",
+            "name": "x-api-key",
+            "in": "header",
+            "description": "API Key authentication via x-api-key header or apiKey query parameter"
+        },
+        "bearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "Bearer token authentication. Format: Bearer <token>"
+        },
+        "oauth2": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "OAuth2 token authentication. Format: Bearer <oauth2-token>"
+        }
+    },
+    "tags": [
+        {
+            "name": "Public",
+            "description": "Public endpoints - no authentication required"
+        },
+        {
+            "name": "Basic Auth",
+            "description": "Endpoints requiring Basic Authentication"
+        },
+        {
+            "name": "API Key",
+            "description": "Endpoints requiring API Key authentication"
+        },
+        {
+            "name": "Bearer Token",
+            "description": "Endpoints requiring Bearer Token authentication"
+        },
+        {
+            "name": "OAuth2",
+            "description": "Endpoints requiring OAuth2 authentication"
+        },
+        {
+            "name": "File Upload",
+            "description": "File upload endpoints with multipart/form-data"
+        }
+    ]
+}
