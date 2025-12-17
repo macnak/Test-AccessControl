@@ -61,10 +61,13 @@ export const apiKeyController = {
 
   // POST with XML Body
   async postXml(request: FastifyRequest, reply: FastifyReply) {
-    return reply.send({
-      success: true,
-      message: 'XML data received with API Key',
-      receivedData: request.body,
-    });
+    const receivedXml = request.body as string;
+    const responseXml = `<?xml version="1.0" encoding="UTF-8"?>
+<response>
+  <success>true</success>
+  <message>XML data received with API Key</message>
+  <receivedData><![CDATA[${receivedXml}]]></receivedData>
+</response>`;
+    return reply.type('application/xml').send(responseXml);
   },
 };

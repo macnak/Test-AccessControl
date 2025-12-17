@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { apiKeys } from '../config/credentials';
 
-export function apiKeyMiddleware(request: FastifyRequest, reply: FastifyReply) {
+export function apiKeyMiddleware(request: FastifyRequest, reply: FastifyReply, next: () => void) {
   const apiKey = (request.headers['x-api-key'] as string) || (request.query as any)?.apiKey;
 
   if (!apiKey) {
@@ -21,5 +21,6 @@ export function apiKeyMiddleware(request: FastifyRequest, reply: FastifyReply) {
   }
 
   // Authentication successful
+  next();
   return;
 }

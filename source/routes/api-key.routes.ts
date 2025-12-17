@@ -71,7 +71,7 @@ const postJsonSchema = {
         properties: {
           success: { type: 'boolean' },
           message: { type: 'string' },
-          receivedData: { type: 'object' },
+          receivedData: { type: 'object', additionalProperties: true },
         },
       },
     },
@@ -90,7 +90,7 @@ const postFormSchema = {
         properties: {
           success: { type: 'boolean' },
           message: { type: 'string' },
-          receivedData: { type: 'object' },
+          receivedData: { type: 'object', additionalProperties: true },
         },
       },
     },
@@ -105,12 +105,7 @@ const postXmlSchema = {
     consumes: ['application/xml'],
     response: {
       200: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          message: { type: 'string' },
-          receivedData: { type: 'object' },
-        },
+        type: 'string',
       },
     },
   },
