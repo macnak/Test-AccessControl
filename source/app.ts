@@ -1,6 +1,7 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
+import formbody from '@fastify/formbody';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { config } from './config/app.config';
@@ -32,11 +33,19 @@ export async function buildApp(): Promise<FastifyInstance> {
     origin: true,
   });
 
+  // Register formbody for application/x-www-form-urlencoded
+  await app.register(formbody);
+
   // Register multipart for file uploads
   await app.register(multipart, {
     limits: {
       fileSize: 10 * 1024 * 1024, // 10MB
     },
+  });
+
+  // Add XML content type parser
+  app.addContentTypeParser('application/xml', { parseAs: 'string' }, (_req, body, done) => {
+    done(null, body);
   });
 
   // Register Swagger

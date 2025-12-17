@@ -4,7 +4,7 @@ This file contains all valid credentials for testing the access control mechanis
 
 ## Basic Authentication
 
-```
+```text
 Username: admin
 Password: admin123
 
@@ -19,7 +19,7 @@ Password: test@pass
 
 Valid API keys (use in `x-api-key` header or `apiKey` query parameter):
 
-```
+```text
 api-key-12345-valid
 api-key-67890-valid
 api-key-abcde-valid
@@ -29,7 +29,7 @@ api-key-abcde-valid
 
 Valid bearer tokens (use in `Authorization: Bearer <token>` header):
 
-```
+```text
 bearer-token-xyz123-valid
 bearer-token-abc456-valid
 bearer-token-def789-valid
@@ -39,7 +39,7 @@ bearer-token-def789-valid
 
 Valid OAuth2 tokens (use in `Authorization: Bearer <token>` header):
 
-```
+```text
 oauth2-token-valid-12345
 oauth2-token-valid-67890
 oauth2-token-valid-abcde

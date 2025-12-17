@@ -43,6 +43,7 @@ export const basicAuthController = {
 
   // POST with JSON Body
   async postJson(request: FastifyRequest, reply: FastifyReply) {
+    console.log('Request body:', request.body);
     return reply.send({
       success: true,
       message: 'Data received with Basic Auth',
@@ -61,6 +62,7 @@ export const basicAuthController = {
 
   // POST with XML Body
   async postXml(request: FastifyRequest, reply: FastifyReply) {
+    console.log('Request body XML:', request.body);
     return reply.send({
       success: true,
       message: 'XML data received with Basic Auth',

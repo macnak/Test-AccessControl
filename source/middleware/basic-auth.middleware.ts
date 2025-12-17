@@ -1,10 +1,16 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { validCredentials } from '../config/credentials';
 
-export function basicAuthMiddleware(request: FastifyRequest, reply: FastifyReply) {
+export function basicAuthMiddleware(
+  request: FastifyRequest,
+  reply: FastifyReply,
+  next: () => void,
+) {
+  console.log('Basic auth middleware called');
   const authHeader = request.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Basic ')) {
+    console.log('No auth header or not Basic');
     return reply.code(401).send({
       error: 'Unauthorized',
       message: 'Basic authentication required',
@@ -21,15 +27,19 @@ export function basicAuthMiddleware(request: FastifyRequest, reply: FastifyReply
     );
 
     if (!isValid) {
+      console.log('Invalid credentials');
       return reply.code(401).send({
         error: 'Unauthorized',
         message: 'Invalid credentials',
       });
     }
 
-    // Authentication successful
+    // Authentication successful - allow request to continue
+    console.log('Auth successful');
+    next();
     return;
   } catch (error) {
+    console.log('Error in auth:', error);
     return reply.code(401).send({
       error: 'Unauthorized',
       message: 'Invalid authentication format',

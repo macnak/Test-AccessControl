@@ -45,6 +45,7 @@ const xmlResponseSchema = {
     description: 'Get XML response with Basic Auth',
     tags: ['Basic Auth'],
     security: [{ basicAuth: [] }],
+    consumes: ['application/xml'],
     response: {
       200: {
         type: 'string',
@@ -60,10 +61,6 @@ const postJsonSchema = {
     security: [{ basicAuth: [] }],
     body: {
       type: 'object',
-      properties: {
-        name: { type: 'string' },
-        value: { type: 'string' },
-      },
     },
     response: {
       200: {
@@ -71,7 +68,7 @@ const postJsonSchema = {
         properties: {
           success: { type: 'boolean' },
           message: { type: 'string' },
-          receivedData: { type: 'object' },
+          receivedData: { type: 'object', additionalProperties: true },
         },
       },
     },
@@ -90,7 +87,7 @@ const postFormSchema = {
         properties: {
           success: { type: 'boolean' },
           message: { type: 'string' },
-          receivedData: { type: 'object' },
+          receivedData: { type: 'object', additionalProperties: true },
         },
       },
     },
@@ -109,7 +106,7 @@ const postXmlSchema = {
         properties: {
           success: { type: 'boolean' },
           message: { type: 'string' },
-          receivedData: { type: 'object' },
+          receivedData: { type: 'object', additionalProperties: true },
         },
       },
     },
