@@ -122,15 +122,7 @@
                         "name": "body",
                         "in": "body",
                         "schema": {
-                            "type": "object",
-                            "properties": {
-                                "name": {
-                                    "type": "string"
-                                },
-                                "value": {
-                                    "type": "string"
-                                }
-                            }
+                            "type": "object"
                         }
                     }
                 ],
@@ -152,7 +144,8 @@
                                     "type": "string"
                                 },
                                 "receivedData": {
-                                    "type": "object"
+                                    "type": "object",
+                                    "additionalProperties": true
                                 }
                             }
                         }
@@ -186,6 +179,9 @@
                 "description": "Get XML response with Basic Auth",
                 "tags": [
                     "Basic Auth"
+                ],
+                "consumes": [
+                    "application/xml"
                 ],
                 "security": [
                     {
@@ -227,7 +223,8 @@
                                     "type": "string"
                                 },
                                 "receivedData": {
-                                    "type": "object"
+                                    "type": "object",
+                                    "additionalProperties": true
                                 }
                             }
                         }
@@ -262,7 +259,8 @@
                                     "type": "string"
                                 },
                                 "receivedData": {
-                                    "type": "object"
+                                    "type": "object",
+                                    "additionalProperties": true
                                 }
                             }
                         }
@@ -355,7 +353,8 @@
                                     "type": "string"
                                 },
                                 "receivedData": {
-                                    "type": "object"
+                                    "type": "object",
+                                    "additionalProperties": true
                                 }
                             }
                         }
@@ -421,18 +420,7 @@
                     "200": {
                         "description": "Default Response",
                         "schema": {
-                            "type": "object",
-                            "properties": {
-                                "success": {
-                                    "type": "boolean"
-                                },
-                                "message": {
-                                    "type": "string"
-                                },
-                                "receivedData": {
-                                    "type": "object"
-                                }
-                            }
+                            "type": "string"
                         }
                     }
                 }
@@ -465,7 +453,182 @@
                                     "type": "string"
                                 },
                                 "receivedData": {
-                                    "type": "object"
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bearer-token/login": {
+            "post": {
+                "description": "Login with email and password to get temporary token and verification code",
+                "tags": [
+                    "Bearer Token"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "email",
+                                "password"
+                            ],
+                            "properties": {
+                                "email": {
+                                    "type": "string",
+                                    "format": "email"
+                                },
+                                "password": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "token": {
+                                    "type": "string"
+                                },
+                                "code": {
+                                    "type": "string"
+                                },
+                                "expiresIn": {
+                                    "type": "number"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "error": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "error": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bearer-token/validate": {
+            "post": {
+                "description": "Validate temporary token and code to receive bearer token",
+                "tags": [
+                    "Bearer Token"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "type": "object",
+                            "required": [
+                                "token",
+                                "code"
+                            ],
+                            "properties": {
+                                "token": {
+                                    "type": "string"
+                                },
+                                "code": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "bearerToken": {
+                                    "type": "string"
+                                },
+                                "tokenType": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "error": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "error": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
                                 }
                             }
                         }
@@ -624,18 +787,7 @@
                     "200": {
                         "description": "Default Response",
                         "schema": {
-                            "type": "object",
-                            "properties": {
-                                "success": {
-                                    "type": "boolean"
-                                },
-                                "message": {
-                                    "type": "string"
-                                },
-                                "receivedData": {
-                                    "type": "object"
-                                }
-                            }
+                            "type": "string"
                         }
                     }
                 }
@@ -669,6 +821,95 @@
                                 },
                                 "receivedData": {
                                     "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bearer-token/data": {
+            "patch": {
+                "description": "Update data with Bearer Token (PATCH)",
+                "tags": [
+                    "Bearer Token"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "value": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "updatedData": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bearer-token/data/{id}": {
+            "delete": {
+                "description": "Delete resource with Bearer Token (DELETE)",
+                "tags": [
+                    "Bearer Token"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "required": true,
+                        "in": "path",
+                        "name": "id"
+                    }
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Default Response",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "success": {
+                                    "type": "boolean"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "deletedId": {
+                                    "type": "string"
                                 }
                             }
                         }
@@ -906,7 +1147,8 @@
                                     "type": "string"
                                 },
                                 "file": {
-                                    "type": "object"
+                                    "type": "object",
+                                    "additionalProperties": true
                                 }
                             }
                         }
@@ -976,7 +1218,8 @@
                                     "type": "string"
                                 },
                                 "fields": {
-                                    "type": "object"
+                                    "type": "object",
+                                    "additionalProperties": true
                                 },
                                 "files": {
                                     "type": "array"

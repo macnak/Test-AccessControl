@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { bearerTokens } from '../config/credentials';
+import { bearerTokens, validatedBearerTokens } from '../config/credentials';
 
 export function bearerTokenMiddleware(
   request: FastifyRequest,
@@ -17,7 +17,8 @@ export function bearerTokenMiddleware(
 
   const token = authHeader.split(' ')[1];
 
-  const isValid = bearerTokens.includes(token);
+  // Check both pre-configured tokens and validated tokens from login flow
+  const isValid = bearerTokens.includes(token) || validatedBearerTokens.has(token);
 
   if (!isValid) {
     return reply.code(401).send({
