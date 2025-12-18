@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { oauth2Tokens } from '../config/credentials';
 
-export function oauth2Middleware(request: FastifyRequest, reply: FastifyReply) {
+export function oauth2Middleware(request: FastifyRequest, reply: FastifyReply, next: () => void) {
   const authHeader = request.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -23,5 +23,6 @@ export function oauth2Middleware(request: FastifyRequest, reply: FastifyReply) {
   }
 
   // Authentication successful
+  next();
   return;
 }

@@ -1,7 +1,11 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { bearerTokens } from '../config/credentials';
 
-export function bearerTokenMiddleware(request: FastifyRequest, reply: FastifyReply) {
+export function bearerTokenMiddleware(
+  request: FastifyRequest,
+  reply: FastifyReply,
+  next: () => void,
+) {
   const authHeader = request.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -23,5 +27,6 @@ export function bearerTokenMiddleware(request: FastifyRequest, reply: FastifyRep
   }
 
   // Authentication successful
+  next();
   return;
 }
