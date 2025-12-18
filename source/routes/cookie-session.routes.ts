@@ -1,11 +1,11 @@
 import { FastifyInstance } from 'fastify';
-import { bearerTokenMiddleware } from '../middleware/bearer-token.middleware';
-import { bearerTokenController } from '../controllers/bearer-token.controller';
+import { cookieSessionMiddleware } from '../middleware/cookie-session.middleware';
+import { cookieSessionController } from '../controllers/cookie-session.controller';
 
 const loginSchema = {
   schema: {
     description: 'Login with email and password to get temporary token and verification code',
-    tags: ['Bearer Token'],
+    tags: ['Cookie Session'],
     body: {
       type: 'object',
       required: ['email', 'password'],
@@ -47,8 +47,8 @@ const loginSchema = {
 
 const validateSchema = {
   schema: {
-    description: 'Validate temporary token and code to receive bearer token',
-    tags: ['Bearer Token'],
+    description: 'Validate temporary token and code to receive session cookie',
+    tags: ['Cookie Session'],
     body: {
       type: 'object',
       required: ['token', 'code'],
@@ -63,8 +63,8 @@ const validateSchema = {
         properties: {
           success: { type: 'boolean' },
           message: { type: 'string' },
-          bearerToken: { type: 'string' },
-          tokenType: { type: 'string' },
+          sessionId: { type: 'string' },
+          cookieName: { type: 'string' },
         },
       },
       400: {
@@ -87,11 +87,26 @@ const validateSchema = {
   },
 };
 
+const logoutSchema = {
+  schema: {
+    description: 'Logout and clear session cookie',
+    tags: ['Cookie Session'],
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          message: { type: 'string' },
+        },
+      },
+    },
+  },
+};
+
 const jsonResponseSchema = {
   schema: {
-    description: 'Get JSON response with Bearer Token',
-    tags: ['Bearer Token'],
-    security: [{ bearerAuth: [] }],
+    description: 'Get JSON response with Session Cookie',
+    tags: ['Cookie Session'],
     response: {
       200: {
         type: 'object',
@@ -114,9 +129,8 @@ const jsonResponseSchema = {
 
 const textResponseSchema = {
   schema: {
-    description: 'Get plain text response with Bearer Token',
-    tags: ['Bearer Token'],
-    security: [{ bearerAuth: [] }],
+    description: 'Get plain text response with Session Cookie',
+    tags: ['Cookie Session'],
     response: {
       200: {
         type: 'string',
@@ -127,9 +141,8 @@ const textResponseSchema = {
 
 const xmlResponseSchema = {
   schema: {
-    description: 'Get XML response with Bearer Token',
-    tags: ['Bearer Token'],
-    security: [{ bearerAuth: [] }],
+    description: 'Get XML response with Session Cookie',
+    tags: ['Cookie Session'],
     response: {
       200: {
         type: 'string',
@@ -138,120 +151,10 @@ const xmlResponseSchema = {
   },
 };
 
-const postJsonSchema = {
-  schema: {
-    description: 'Post JSON data with Bearer Token',
-    tags: ['Bearer Token'],
-    security: [{ bearerAuth: [] }],
-    body: {
-      type: 'object',
-      properties: {
-        name: { type: 'string' },
-        value: { type: 'string' },
-      },
-    },
-    response: {
-      200: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          message: { type: 'string' },
-          receivedData: { type: 'object' },
-        },
-      },
-    },
-  },
-};
-
-const postFormSchema = {
-  schema: {
-    description: 'Post form data with Bearer Token',
-    tags: ['Bearer Token'],
-    security: [{ bearerAuth: [] }],
-    consumes: ['application/x-www-form-urlencoded'],
-    response: {
-      200: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          message: { type: 'string' },
-          receivedData: { type: 'object' },
-        },
-      },
-    },
-  },
-};
-
-const postXmlSchema = {
-  schema: {
-    description: 'Post XML data with Bearer Token',
-    tags: ['Bearer Token'],
-    security: [{ bearerAuth: [] }],
-    consumes: ['application/xml'],
-    response: {
-      200: {
-        type: 'string',
-      },
-    },
-  },
-};
-
-const patchSchema = {
-  schema: {
-    description: 'Update data with Bearer Token (PATCH)',
-    tags: ['Bearer Token'],
-    security: [{ bearerAuth: [] }],
-    body: {
-      type: 'object',
-      properties: {
-        name: { type: 'string' },
-        value: { type: 'string' },
-      },
-    },
-    response: {
-      200: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          message: { type: 'string' },
-          updatedData: { type: 'object' },
-        },
-      },
-    },
-  },
-};
-
-const deleteSchema = {
-  schema: {
-    description: 'Delete resource with Bearer Token (DELETE)',
-    tags: ['Bearer Token'],
-    security: [{ bearerAuth: [] }],
-    params: {
-      type: 'object',
-      properties: {
-        id: { type: 'string' },
-      },
-      required: ['id'],
-    },
-    response: {
-      200: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          message: { type: 'string' },
-          deletedId: { type: 'string' },
-        },
-      },
-    },
-  },
-};
-
-// Additional GET endpoints with various response types
 const htmlResponseSchema = {
   schema: {
-    description: 'Get HTML response with Bearer Token',
-    tags: ['Bearer Token'],
-    security: [{ bearerAuth: [] }],
+    description: 'Get HTML response with Session Cookie',
+    tags: ['Cookie Session'],
     response: {
       200: {
         type: 'string',
@@ -262,9 +165,8 @@ const htmlResponseSchema = {
 
 const csvResponseSchema = {
   schema: {
-    description: 'Get CSV response with Bearer Token',
-    tags: ['Bearer Token'],
-    security: [{ bearerAuth: [] }],
+    description: 'Get CSV response with Session Cookie',
+    tags: ['Cookie Session'],
     response: {
       200: {
         type: 'string',
@@ -275,9 +177,8 @@ const csvResponseSchema = {
 
 const binaryResponseSchema = {
   schema: {
-    description: 'Get binary/file response with Bearer Token',
-    tags: ['Bearer Token'],
-    security: [{ bearerAuth: [] }],
+    description: 'Get binary/file response with Session Cookie',
+    tags: ['Cookie Session'],
     response: {
       200: {
         type: 'string',
@@ -288,9 +189,8 @@ const binaryResponseSchema = {
 
 const arrayResponseSchema = {
   schema: {
-    description: 'Get array response with Bearer Token',
-    tags: ['Bearer Token'],
-    security: [{ bearerAuth: [] }],
+    description: 'Get array response with Session Cookie',
+    tags: ['Cookie Session'],
     response: {
       200: {
         type: 'array',
@@ -302,12 +202,34 @@ const arrayResponseSchema = {
   },
 };
 
-// POST endpoints with various JSON body structures
+const postJsonSchema = {
+  schema: {
+    description: 'Post JSON data with Session Cookie',
+    tags: ['Cookie Session'],
+    body: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        value: { type: 'string' },
+      },
+    },
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          message: { type: 'string' },
+          receivedData: { type: 'object' },
+        },
+      },
+    },
+  },
+};
+
 const postNestedJsonSchema = {
   schema: {
-    description: 'Post nested JSON data with Bearer Token',
-    tags: ['Bearer Token'],
-    security: [{ bearerAuth: [] }],
+    description: 'Post nested JSON data with Session Cookie',
+    tags: ['Cookie Session'],
     body: {
       type: 'object',
       properties: {
@@ -343,9 +265,8 @@ const postNestedJsonSchema = {
 
 const postArrayJsonSchema = {
   schema: {
-    description: 'Post array of items with Bearer Token',
-    tags: ['Bearer Token'],
-    security: [{ bearerAuth: [] }],
+    description: 'Post array of items with Session Cookie',
+    tags: ['Cookie Session'],
     body: {
       type: 'object',
       properties: {
@@ -378,9 +299,8 @@ const postArrayJsonSchema = {
 
 const postComplexJsonSchema = {
   schema: {
-    description: 'Post complex JSON data with Bearer Token',
-    tags: ['Bearer Token'],
-    security: [{ bearerAuth: [] }],
+    description: 'Post complex JSON data with Session Cookie',
+    tags: ['Cookie Session'],
     body: {
       type: 'object',
       properties: {
@@ -413,12 +333,89 @@ const postComplexJsonSchema = {
   },
 };
 
-// Endpoints with path parameters
+const postFormSchema = {
+  schema: {
+    description: 'Post form data with Session Cookie',
+    tags: ['Cookie Session'],
+    consumes: ['application/x-www-form-urlencoded'],
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          message: { type: 'string' },
+          receivedData: { type: 'object' },
+        },
+      },
+    },
+  },
+};
+
+const postXmlSchema = {
+  schema: {
+    description: 'Post XML data with Session Cookie',
+    tags: ['Cookie Session'],
+    consumes: ['application/xml'],
+    response: {
+      200: {
+        type: 'string',
+      },
+    },
+  },
+};
+
+const patchSchema = {
+  schema: {
+    description: 'Update data with Session Cookie (PATCH)',
+    tags: ['Cookie Session'],
+    body: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        value: { type: 'string' },
+      },
+    },
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          message: { type: 'string' },
+          updatedData: { type: 'object' },
+        },
+      },
+    },
+  },
+};
+
+const deleteSchema = {
+  schema: {
+    description: 'Delete resource with Session Cookie (DELETE)',
+    tags: ['Cookie Session'],
+    params: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+      },
+      required: ['id'],
+    },
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          message: { type: 'string' },
+          deletedId: { type: 'string' },
+        },
+      },
+    },
+  },
+};
+
 const getUserByIdSchema = {
   schema: {
-    description: 'Get user by ID with Bearer Token',
-    tags: ['Bearer Token'],
-    security: [{ bearerAuth: [] }],
+    description: 'Get user by ID with Session Cookie',
+    tags: ['Cookie Session'],
     params: {
       type: 'object',
       properties: {
@@ -447,9 +444,8 @@ const getUserByIdSchema = {
 
 const getProductByIdSchema = {
   schema: {
-    description: 'Get product by ID with Bearer Token',
-    tags: ['Bearer Token'],
-    security: [{ bearerAuth: [] }],
+    description: 'Get product by ID with Session Cookie',
+    tags: ['Cookie Session'],
     params: {
       type: 'object',
       properties: {
@@ -478,9 +474,8 @@ const getProductByIdSchema = {
 
 const updateResourceByIdSchema = {
   schema: {
-    description: 'Update resource by ID with Bearer Token (PUT)',
-    tags: ['Bearer Token'],
-    security: [{ bearerAuth: [] }],
+    description: 'Update resource by ID with Session Cookie (PUT)',
+    tags: ['Cookie Session'],
     params: {
       type: 'object',
       properties: {
@@ -512,9 +507,8 @@ const updateResourceByIdSchema = {
 
 const getCategoryItemsSchema = {
   schema: {
-    description: 'Get items by category with Bearer Token',
-    tags: ['Bearer Token'],
-    security: [{ bearerAuth: [] }],
+    description: 'Get items by category with Session Cookie',
+    tags: ['Cookie Session'],
     params: {
       type: 'object',
       properties: {
@@ -535,64 +529,69 @@ const getCategoryItemsSchema = {
   },
 };
 
-export default async function bearerTokenRoutes(fastify: FastifyInstance) {
+export default async function cookieSessionRoutes(fastify: FastifyInstance) {
   // Public auth endpoints (no middleware)
-  fastify.post('/login', loginSchema, bearerTokenController.login);
-  fastify.post('/validate', validateSchema, bearerTokenController.validate);
+  fastify.post('/login', loginSchema, cookieSessionController.login);
+  fastify.post('/validate', validateSchema, cookieSessionController.validate);
+  fastify.post('/logout', logoutSchema, cookieSessionController.logout);
 
-  // Protected endpoints (with bearer token middleware)
+  // Protected endpoints (with cookie session middleware)
   fastify.register(async (authenticatedRoutes) => {
-    authenticatedRoutes.addHook('preHandler', bearerTokenMiddleware);
+    authenticatedRoutes.addHook('preHandler', cookieSessionMiddleware);
 
-    // Existing endpoints
-    authenticatedRoutes.get('/json', jsonResponseSchema, bearerTokenController.getJson);
-    authenticatedRoutes.get('/text', textResponseSchema, bearerTokenController.getText);
-    authenticatedRoutes.get('/xml', xmlResponseSchema, bearerTokenController.getXml);
-    authenticatedRoutes.post('/json', postJsonSchema, bearerTokenController.postJson);
-    authenticatedRoutes.post('/form', postFormSchema, bearerTokenController.postForm);
-    authenticatedRoutes.post('/xml', postXmlSchema, bearerTokenController.postXml);
-    authenticatedRoutes.patch('/data', patchSchema, bearerTokenController.patchData);
-    authenticatedRoutes.delete('/data/:id', deleteSchema, bearerTokenController.deleteData);
+    // GET endpoints with various response formats
+    authenticatedRoutes.get('/json', jsonResponseSchema, cookieSessionController.getJson);
+    authenticatedRoutes.get('/text', textResponseSchema, cookieSessionController.getText);
+    authenticatedRoutes.get('/xml', xmlResponseSchema, cookieSessionController.getXml);
+    authenticatedRoutes.get('/html', htmlResponseSchema, cookieSessionController.getHtml);
+    authenticatedRoutes.get('/csv', csvResponseSchema, cookieSessionController.getCsv);
+    authenticatedRoutes.get('/binary', binaryResponseSchema, cookieSessionController.getBinary);
+    authenticatedRoutes.get('/array', arrayResponseSchema, cookieSessionController.getArray);
 
-    // Additional GET endpoints with various response formats
-    authenticatedRoutes.get('/html', htmlResponseSchema, bearerTokenController.getHtml);
-    authenticatedRoutes.get('/csv', csvResponseSchema, bearerTokenController.getCsv);
-    authenticatedRoutes.get('/binary', binaryResponseSchema, bearerTokenController.getBinary);
-    authenticatedRoutes.get('/array', arrayResponseSchema, bearerTokenController.getArray);
-
-    // Additional POST endpoints with various JSON body structures
+    // POST endpoints with various JSON body structures
+    authenticatedRoutes.post('/json', postJsonSchema, cookieSessionController.postJson);
     authenticatedRoutes.post(
       '/nested-json',
       postNestedJsonSchema,
-      bearerTokenController.postNestedJson,
+      cookieSessionController.postNestedJson,
     );
     authenticatedRoutes.post(
       '/array-json',
       postArrayJsonSchema,
-      bearerTokenController.postArrayJson,
+      cookieSessionController.postArrayJson,
     );
     authenticatedRoutes.post(
       '/complex-json',
       postComplexJsonSchema,
-      bearerTokenController.postComplexJson,
+      cookieSessionController.postComplexJson,
     );
+    authenticatedRoutes.post('/form', postFormSchema, cookieSessionController.postForm);
+    authenticatedRoutes.post('/xml', postXmlSchema, cookieSessionController.postXml);
+
+    // Update and delete operations
+    authenticatedRoutes.patch('/data', patchSchema, cookieSessionController.patchData);
+    authenticatedRoutes.delete('/data/:id', deleteSchema, cookieSessionController.deleteData);
 
     // Endpoints with path parameters
-    authenticatedRoutes.get('/users/:userId', getUserByIdSchema, bearerTokenController.getUserById);
+    authenticatedRoutes.get(
+      '/users/:userId',
+      getUserByIdSchema,
+      cookieSessionController.getUserById,
+    );
     authenticatedRoutes.get(
       '/products/:productId',
       getProductByIdSchema,
-      bearerTokenController.getProductById,
+      cookieSessionController.getProductById,
     );
     authenticatedRoutes.put(
       '/resources/:resourceId',
       updateResourceByIdSchema,
-      bearerTokenController.updateResourceById,
+      cookieSessionController.updateResourceById,
     );
     authenticatedRoutes.get(
       '/categories/:category/items',
       getCategoryItemsSchema,
-      bearerTokenController.getCategoryItems,
+      cookieSessionController.getCategoryItems,
     );
   });
 }

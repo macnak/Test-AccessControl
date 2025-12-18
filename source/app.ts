@@ -2,6 +2,7 @@ import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import formbody from '@fastify/formbody';
+import cookie from '@fastify/cookie';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { config } from './config/app.config';
@@ -13,6 +14,7 @@ import apiKeyRoutes from './routes/api-key.routes';
 import bearerTokenRoutes from './routes/bearer-token.routes';
 import oauth2Routes from './routes/oauth2.routes';
 import uploadRoutes from './routes/upload.routes';
+import cookieSessionRoutes from './routes/cookie-session.routes';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -31,6 +33,11 @@ export async function buildApp(): Promise<FastifyInstance> {
   // Register CORS
   await app.register(cors, {
     origin: true,
+  });
+
+  // Register cookie support
+  await app.register(cookie, {
+    secret: 'my-secret-key-change-in-production', // Should be in environment variables in production
   });
 
   // Register formbody for application/x-www-form-urlencoded
@@ -113,6 +120,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(bearerTokenRoutes, { prefix: '/api/bearer-token' });
   await app.register(oauth2Routes, { prefix: '/api/oauth2' });
   await app.register(uploadRoutes, { prefix: '/api/upload' });
+  await app.register(cookieSessionRoutes, { prefix: '/api/cookie-session' });
 
   return app;
 }

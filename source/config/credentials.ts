@@ -49,3 +49,7 @@ export const oauth2Tokens: string[] = [
 // In-memory storage for pending auth requests and validated tokens
 export const pendingAuthRequests = new Map<string, PendingAuth>();
 export const validatedBearerTokens = new Set<string>();
+
+// Cookie session storage
+export const pendingCookieAuth = new Map<string, PendingAuth>();
+export const validatedSessionCookies = new Set<string>();

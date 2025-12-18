@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { sampleUsers, sampleProducts } from '../config/sample-data';
-import { userAccounts, pendingAuthRequests, validatedBearerTokens } from '../config/credentials';
+import { userAccounts, pendingCookieAuth, validatedSessionCookies } from '../config/credentials';
 import crypto from 'crypto';
 
 interface LoginBody {
@@ -18,7 +18,7 @@ interface UpdateBody {
   value?: string;
 }
 
-export const bearerTokenController = {
+export const cookieSessionController = {
   // Login endpoint - no auth required
   async login(request: FastifyRequest<{ Body: LoginBody }>, reply: FastifyReply) {
     const { email, password } = request.body;
@@ -43,12 +43,12 @@ export const bearerTokenController = {
     }
 
     // Generate temporary token and verification code
-    const tempToken = `temp-${crypto.randomBytes(16).toString('hex')}`;
+    const tempToken = `temp-cookie-${crypto.randomBytes(16).toString('hex')}`;
     const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit code
     const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
 
     // Store pending auth request
-    pendingAuthRequests.set(tempToken, {
+    pendingCookieAuth.set(tempToken, {
       tempToken,
       code,
       email,
@@ -64,7 +64,7 @@ export const bearerTokenController = {
     });
   },
 
-  // Validate endpoint - validates temp token + code, returns real bearer token
+  // Validate endpoint - validates temp token + code, sets session cookie
   async validate(request: FastifyRequest<{ Body: ValidateBody }>, reply: FastifyReply) {
     const { token, code } = request.body;
 
@@ -77,7 +77,7 @@ export const bearerTokenController = {
     }
 
     // Check if pending auth exists
-    const pending = pendingAuthRequests.get(token);
+    const pending = pendingCookieAuth.get(token);
 
     if (!pending) {
       return reply.code(401).send({
@@ -89,7 +89,7 @@ export const bearerTokenController = {
 
     // Check if expired
     if (Date.now() > pending.expiresAt) {
-      pendingAuthRequests.delete(token);
+      pendingCookieAuth.delete(token);
       return reply.code(401).send({
         success: false,
         error: 'Unauthorized',
@@ -106,18 +106,43 @@ export const bearerTokenController = {
       });
     }
 
-    // Generate real bearer token
-    const bearerToken = `bearer-${crypto.randomBytes(24).toString('hex')}`;
-    validatedBearerTokens.add(bearerToken);
+    // Generate session cookie
+    const sessionId = `session-${crypto.randomBytes(24).toString('hex')}`;
+    validatedSessionCookies.add(sessionId);
 
     // Clean up pending auth
-    pendingAuthRequests.delete(token);
+    pendingCookieAuth.delete(token);
+
+    // Set the session cookie
+    reply.setCookie('sessionId', sessionId, {
+      httpOnly: true,
+      secure: false, // Set to true in production with HTTPS
+      sameSite: 'lax',
+      maxAge: 3600, // 1 hour
+      path: '/',
+    });
 
     return reply.send({
       success: true,
-      message: 'Validation successful',
-      bearerToken,
-      tokenType: 'Bearer',
+      message: 'Validation successful. Session cookie has been set.',
+      sessionId,
+      cookieName: 'sessionId',
+    });
+  },
+
+  // Logout endpoint - clears session cookie
+  async logout(request: FastifyRequest, reply: FastifyReply) {
+    const sessionCookie = request.cookies.sessionId;
+
+    if (sessionCookie) {
+      validatedSessionCookies.delete(sessionCookie);
+    }
+
+    reply.clearCookie('sessionId', { path: '/' });
+
+    return reply.send({
+      success: true,
+      message: 'Logged out successfully. Session cookie cleared.',
     });
   },
 
@@ -125,7 +150,7 @@ export const bearerTokenController = {
   async getJson(_request: FastifyRequest, reply: FastifyReply) {
     return reply.send({
       success: true,
-      message: 'Authenticated with Bearer Token',
+      message: 'Authenticated with Session Cookie',
       data: { users: sampleUsers.slice(0, 2), products: sampleProducts.slice(0, 2) },
     });
   },
@@ -134,7 +159,7 @@ export const bearerTokenController = {
   async getText(_request: FastifyRequest, reply: FastifyReply) {
     return reply
       .type('text/plain')
-      .send('Successfully authenticated with Bearer Token - Plain Text Response');
+      .send('Successfully authenticated with Session Cookie - Plain Text Response');
   },
 
   // XML Response
@@ -142,80 +167,33 @@ export const bearerTokenController = {
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <response>
   <success>true</success>
-  <message>Authenticated with Bearer Token</message>
+  <message>Authenticated with Session Cookie</message>
 </response>`;
     return reply.type('application/xml').send(xml);
   },
 
-  // POST with JSON Body
-  async postJson(request: FastifyRequest, reply: FastifyReply) {
-    return reply.send({
-      success: true,
-      message: 'Data received with Bearer Token',
-      receivedData: request.body,
-    });
-  },
-
-  // POST with Form URL Encoded
-  async postForm(request: FastifyRequest, reply: FastifyReply) {
-    return reply.send({
-      success: true,
-      message: 'Form data received with Bearer Token',
-      receivedData: request.body,
-    });
-  },
-
-  // POST with XML Body
-  async postXml(request: FastifyRequest, reply: FastifyReply) {
-    const receivedXml = request.body as string;
-    const responseXml = `<?xml version="1.0" encoding="UTF-8"?>
-<response>
-  <success>true</success>
-  <message>XML data received with Bearer Token</message>
-  <receivedData><![CDATA[${receivedXml}]]></receivedData>
-</response>`;
-    return reply.type('application/xml').send(responseXml);
-  },
-
-  // PATCH - Update data
-  async patchData(request: FastifyRequest<{ Body: UpdateBody }>, reply: FastifyReply) {
-    return reply.send({
-      success: true,
-      message: 'Data updated with Bearer Token',
-      updatedData: request.body,
-    });
-  },
-
-  // DELETE - Delete resource
-  async deleteData(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
-    const { id } = request.params;
-    return reply.send({
-      success: true,
-      message: `Resource ${id} deleted with Bearer Token`,
-      deletedId: id,
-    });
-  },
-
-  // Additional GET endpoints with various response formats
+  // HTML Response
   async getHtml(_request: FastifyRequest, reply: FastifyReply) {
     const html = `<!DOCTYPE html>
 <html>
 <head>
-  <title>Bearer Token Response</title>
+  <title>Session Cookie Response</title>
 </head>
 <body>
-  <h1>Successfully authenticated with Bearer Token</h1>
-  <p>This is an HTML response demonstrating various content types.</p>
+  <h1>Successfully authenticated with Session Cookie</h1>
+  <p>This is an HTML response demonstrating cookie-based authentication.</p>
   <ul>
     <li>Status: Authenticated</li>
     <li>Method: GET</li>
     <li>Format: HTML</li>
+    <li>Auth Type: Session Cookie</li>
   </ul>
 </body>
 </html>`;
     return reply.type('text/html').send(html);
   },
 
+  // CSV Response
   async getCsv(_request: FastifyRequest, reply: FastifyReply) {
     const csv = `id,name,email,status
 1,John Doe,john@example.com,active
@@ -225,18 +203,19 @@ export const bearerTokenController = {
     return reply.type('text/csv').send(csv);
   },
 
+  // Binary Response
   async getBinary(_request: FastifyRequest, reply: FastifyReply) {
-    // Simulate a simple binary file (e.g., a small image or data)
     const buffer = Buffer.from(
-      'This is simulated binary data for Bearer Token authentication',
+      'This is simulated binary data for Cookie Session authentication',
       'utf-8',
     );
     return reply
       .type('application/octet-stream')
-      .header('Content-Disposition', 'attachment; filename="data.bin"')
+      .header('Content-Disposition', 'attachment; filename=\"data.bin\"')
       .send(buffer);
   },
 
+  // Array Response
   async getArray(_request: FastifyRequest, reply: FastifyReply) {
     return reply.send([
       { id: 1, name: 'Item One', category: 'electronics', price: 299.99 },
@@ -246,12 +225,21 @@ export const bearerTokenController = {
     ]);
   },
 
-  // Additional POST endpoints with various JSON body structures
+  // POST with JSON Body
+  async postJson(request: FastifyRequest, reply: FastifyReply) {
+    return reply.send({
+      success: true,
+      message: 'Data received with Session Cookie',
+      receivedData: request.body,
+    });
+  },
+
+  // POST with Nested JSON
   async postNestedJson(request: FastifyRequest, reply: FastifyReply) {
     const data = request.body as any;
     return reply.send({
       success: true,
-      message: 'Nested JSON data received with Bearer Token',
+      message: 'Nested JSON data received with Session Cookie',
       receivedData: data,
       summary: {
         hasUser: !!data.user,
@@ -261,23 +249,25 @@ export const bearerTokenController = {
     });
   },
 
+  // POST with Array JSON
   async postArrayJson(request: FastifyRequest, reply: FastifyReply) {
     const data = request.body as any;
     const items = data.items || [];
     return reply.send({
       success: true,
-      message: 'Array data received with Bearer Token',
+      message: 'Array data received with Session Cookie',
       itemCount: items.length,
       receivedData: data,
       totalQuantity: items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0),
     });
   },
 
+  // POST with Complex JSON
   async postComplexJson(request: FastifyRequest, reply: FastifyReply) {
     const data = request.body as any;
     return reply.send({
       success: true,
-      message: 'Complex JSON data processed with Bearer Token',
+      message: 'Complex JSON data processed with Session Cookie',
       processed: {
         receivedAt: new Date().toISOString(),
         metadata: data.metadata,
@@ -288,7 +278,47 @@ export const bearerTokenController = {
     });
   },
 
-  // Endpoints with path parameters
+  // POST with Form Data
+  async postForm(request: FastifyRequest, reply: FastifyReply) {
+    return reply.send({
+      success: true,
+      message: 'Form data received with Session Cookie',
+      receivedData: request.body,
+    });
+  },
+
+  // POST with XML Body
+  async postXml(request: FastifyRequest, reply: FastifyReply) {
+    const receivedXml = request.body as string;
+    const responseXml = `<?xml version="1.0" encoding="UTF-8"?>
+<response>
+  <success>true</success>
+  <message>XML data received with Session Cookie</message>
+  <receivedData><![CDATA[${receivedXml}]]></receivedData>
+</response>`;
+    return reply.type('application/xml').send(responseXml);
+  },
+
+  // PATCH - Update data
+  async patchData(request: FastifyRequest<{ Body: UpdateBody }>, reply: FastifyReply) {
+    return reply.send({
+      success: true,
+      message: 'Data updated with Session Cookie',
+      updatedData: request.body,
+    });
+  },
+
+  // DELETE - Delete resource
+  async deleteData(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+    const { id } = request.params;
+    return reply.send({
+      success: true,
+      message: `Resource ${id} deleted with Session Cookie`,
+      deletedId: id,
+    });
+  },
+
+  // Get user by ID
   async getUserById(request: FastifyRequest<{ Params: { userId: string } }>, reply: FastifyReply) {
     const { userId } = request.params;
     const user = sampleUsers.find((u) => u.id.toString() === userId);
@@ -306,6 +336,7 @@ export const bearerTokenController = {
     });
   },
 
+  // Get product by ID
   async getProductById(
     request: FastifyRequest<{ Params: { productId: string } }>,
     reply: FastifyReply,
@@ -326,6 +357,7 @@ export const bearerTokenController = {
     });
   },
 
+  // Update resource by ID
   async updateResourceById(
     request: FastifyRequest<{ Params: { resourceId: string }; Body: any }>,
     reply: FastifyReply,
@@ -342,6 +374,7 @@ export const bearerTokenController = {
     });
   },
 
+  // Get items by category
   async getCategoryItems(
     request: FastifyRequest<{ Params: { category: string } }>,
     reply: FastifyReply,
