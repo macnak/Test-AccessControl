@@ -20,7 +20,7 @@ export default async function uploadRoutes(fastify: FastifyInstance) {
             properties: {
               success: { type: 'boolean' },
               message: { type: 'string' },
-              file: { type: 'object' },
+              file: { type: 'object', additionalProperties: true },
             },
           },
         },
@@ -66,7 +66,7 @@ export default async function uploadRoutes(fastify: FastifyInstance) {
             properties: {
               success: { type: 'boolean' },
               message: { type: 'string' },
-              fields: { type: 'object' },
+              fields: { type: 'object', additionalProperties: true },
               files: { type: 'array' },
             },
           },
