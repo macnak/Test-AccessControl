@@ -156,7 +156,7 @@ const postJsonSchema = {
         properties: {
           success: { type: 'boolean' },
           message: { type: 'string' },
-          receivedData: { type: 'object' },
+          receivedData: { type: 'object', additionalProperties: true },
         },
       },
     },
@@ -175,7 +175,7 @@ const postFormSchema = {
         properties: {
           success: { type: 'boolean' },
           message: { type: 'string' },
-          receivedData: { type: 'object' },
+          receivedData: { type: 'object', additionalProperties: true },
         },
       },
     },
@@ -214,7 +214,7 @@ const patchSchema = {
         properties: {
           success: { type: 'boolean' },
           message: { type: 'string' },
-          updatedData: { type: 'object' },
+          updatedData: { type: 'object', additionalProperties: true },
         },
       },
     },
@@ -334,7 +334,7 @@ const postNestedJsonSchema = {
         properties: {
           success: { type: 'boolean' },
           message: { type: 'string' },
-          receivedData: { type: 'object' },
+          receivedData: { type: 'object', additionalProperties: true },
         },
       },
     },
@@ -369,7 +369,7 @@ const postArrayJsonSchema = {
           success: { type: 'boolean' },
           message: { type: 'string' },
           itemCount: { type: 'number' },
-          receivedData: { type: 'object' },
+          receivedData: { type: 'object', additionalProperties: true },
         },
       },
     },
@@ -406,7 +406,7 @@ const postComplexJsonSchema = {
         properties: {
           success: { type: 'boolean' },
           message: { type: 'string' },
-          processed: { type: 'object' },
+          processed: { type: 'object', additionalProperties: true },
         },
       },
     },
@@ -493,7 +493,7 @@ const updateResourceByIdSchema = {
       properties: {
         name: { type: 'string' },
         status: { type: 'string' },
-        data: { type: 'object' },
+        data: { type: 'object', additionalProperties: true },
       },
     },
     response: {
@@ -503,7 +503,7 @@ const updateResourceByIdSchema = {
           success: { type: 'boolean' },
           message: { type: 'string' },
           resourceId: { type: 'string' },
-          updatedData: { type: 'object' },
+          updatedData: { type: 'object', additionalProperties: true },
         },
       },
     },
