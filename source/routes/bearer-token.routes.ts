@@ -535,6 +535,510 @@ const getCategoryItemsSchema = {
   },
 };
 
+// Validation endpoints - GET with query parameters
+const validateDatesSchema = {
+  schema: {
+    description: 'Test date parameter validation with multiple formats',
+    tags: ['Bearer Token - Validation'],
+    security: [{ bearerAuth: [] }],
+    querystring: {
+      type: 'object',
+      properties: {
+        isoDate: {
+          type: 'string',
+          format: 'date-time',
+          description: 'ISO 8601 date-time format (e.g., 2024-12-21T10:30:00Z)',
+        },
+        dateOnly: {
+          type: 'string',
+          format: 'date',
+          description: 'Date only format (e.g., 2024-12-21)',
+        },
+        timestamp: {
+          type: 'integer',
+          description: 'Unix timestamp in seconds',
+          minimum: 0,
+        },
+        customFormat: {
+          type: 'string',
+          pattern: '^(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])/\\d{4}$',
+          description: 'MM/DD/YYYY format',
+        },
+      },
+    },
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          received: { type: 'object' },
+          parsed: { type: 'object' },
+        },
+      },
+    },
+  },
+};
+
+const validateNumbersSchema = {
+  schema: {
+    description: 'Test number parameter validation with constraints',
+    tags: ['Bearer Token - Validation'],
+    security: [{ bearerAuth: [] }],
+    querystring: {
+      type: 'object',
+      properties: {
+        integer: {
+          type: 'integer',
+          description: 'Standard integer',
+        },
+        positiveInt: {
+          type: 'integer',
+          minimum: 1,
+          description: 'Positive integer (>= 1)',
+        },
+        rangeInt: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 100,
+          description: 'Integer between 1 and 100',
+        },
+        decimal: {
+          type: 'number',
+          description: 'Decimal number',
+        },
+        percentage: {
+          type: 'number',
+          minimum: 0,
+          maximum: 100,
+          multipleOf: 0.01,
+          description: 'Percentage (0-100 with 2 decimal places)',
+        },
+      },
+    },
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          received: { type: 'object' },
+          types: { type: 'object' },
+        },
+      },
+    },
+  },
+};
+
+const validateUuidSchema = {
+  schema: {
+    description: 'Test UUID validation in path and query',
+    tags: ['Bearer Token - Validation'],
+    security: [{ bearerAuth: [] }],
+    params: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          format: 'uuid',
+          description: 'UUID v4 format',
+        },
+      },
+      required: ['id'],
+    },
+    querystring: {
+      type: 'object',
+      properties: {
+        correlationId: {
+          type: 'string',
+          format: 'uuid',
+          description: 'Optional correlation UUID',
+        },
+      },
+    },
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          id: { type: 'string' },
+          correlationId: { type: 'string' },
+          isValidUuid: { type: 'boolean' },
+        },
+      },
+    },
+  },
+};
+
+const validateEnumsSchema = {
+  schema: {
+    description: 'Test enum validation for strings and integers',
+    tags: ['Bearer Token - Validation'],
+    security: [{ bearerAuth: [] }],
+    querystring: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+          enum: ['pending', 'active', 'inactive', 'archived'],
+          description: 'Status enum',
+        },
+        priority: {
+          type: 'integer',
+          enum: [1, 2, 3, 4, 5],
+          description: 'Priority level (1-5)',
+        },
+        color: {
+          type: 'string',
+          enum: ['red', 'green', 'blue', 'yellow'],
+          description: 'Color enum',
+        },
+      },
+    },
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          received: { type: 'object' },
+        },
+      },
+    },
+  },
+};
+
+const validateConstraintsSchema = {
+  schema: {
+    description: 'Test string constraints (length, pattern, format)',
+    tags: ['Bearer Token - Validation'],
+    security: [{ bearerAuth: [] }],
+    querystring: {
+      type: 'object',
+      properties: {
+        email: {
+          type: 'string',
+          format: 'email',
+          description: 'Email address',
+        },
+        username: {
+          type: 'string',
+          minLength: 3,
+          maxLength: 20,
+          pattern: '^[a-zA-Z0-9_-]+$',
+          description: 'Username (3-20 chars, alphanumeric with _ -)',
+        },
+        zipCode: {
+          type: 'string',
+          pattern: '^\\d{5}(-\\d{4})?$',
+          description: 'US ZIP code (5 or 9 digits)',
+        },
+        url: {
+          type: 'string',
+          format: 'uri',
+          description: 'Valid URL',
+        },
+      },
+    },
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          received: { type: 'object' },
+          validated: { type: 'object' },
+        },
+      },
+    },
+  },
+};
+
+const validateArraysSchema = {
+  schema: {
+    description: 'Test array parameter validation',
+    tags: ['Bearer Token - Validation'],
+    security: [{ bearerAuth: [] }],
+    querystring: {
+      type: 'object',
+      properties: {
+        tags: {
+          type: 'array',
+          items: { type: 'string' },
+          minItems: 1,
+          maxItems: 10,
+          description: 'Array of tags (1-10 items)',
+        },
+        ids: {
+          type: 'array',
+          items: { type: 'integer' },
+          uniqueItems: true,
+          description: 'Array of unique integer IDs',
+        },
+      },
+    },
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          received: { type: 'object' },
+          counts: { type: 'object' },
+        },
+      },
+    },
+  },
+};
+
+// POST endpoints with body validation
+const postValidateDatesSchema = {
+  schema: {
+    description: 'Test date validation in POST body',
+    tags: ['Bearer Token - Validation'],
+    security: [{ bearerAuth: [] }],
+    body: {
+      type: 'object',
+      required: ['eventDate'],
+      properties: {
+        eventDate: {
+          type: 'string',
+          format: 'date-time',
+          description: 'Event date-time',
+        },
+        startDate: {
+          type: 'string',
+          format: 'date',
+        },
+        endDate: {
+          type: 'string',
+          format: 'date',
+        },
+        timestamp: {
+          type: 'integer',
+          minimum: 0,
+        },
+      },
+    },
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          received: { type: 'object' },
+          parsed: { type: 'object' },
+        },
+      },
+    },
+  },
+};
+
+const postValidateNumbersSchema = {
+  schema: {
+    description: 'Test number validation in POST body with constraints',
+    tags: ['Bearer Token - Validation'],
+    security: [{ bearerAuth: [] }],
+    body: {
+      type: 'object',
+      required: ['quantity', 'price'],
+      properties: {
+        quantity: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 1000,
+          description: 'Order quantity',
+        },
+        price: {
+          type: 'number',
+          minimum: 0.01,
+          description: 'Price (must be positive)',
+        },
+        discount: {
+          type: 'number',
+          minimum: 0,
+          maximum: 100,
+          multipleOf: 0.5,
+          description: 'Discount percentage',
+        },
+        rating: {
+          type: 'number',
+          minimum: 0,
+          maximum: 5,
+          multipleOf: 0.1,
+        },
+      },
+    },
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          data: { type: 'object' },
+          calculated: { type: 'object' },
+        },
+      },
+    },
+  },
+};
+
+const postValidateComplexSchema = {
+  schema: {
+    description: 'Test complex object validation with nested structures',
+    tags: ['Bearer Token - Validation'],
+    security: [{ bearerAuth: [] }],
+    body: {
+      type: 'object',
+      required: ['userId', 'profile'],
+      properties: {
+        userId: {
+          type: 'string',
+          format: 'uuid',
+        },
+        profile: {
+          type: 'object',
+          required: ['name', 'email'],
+          properties: {
+            name: {
+              type: 'string',
+              minLength: 2,
+              maxLength: 100,
+            },
+            email: {
+              type: 'string',
+              format: 'email',
+            },
+            age: {
+              type: 'integer',
+              minimum: 18,
+              maximum: 120,
+            },
+            status: {
+              type: 'string',
+              enum: ['active', 'inactive', 'pending'],
+            },
+          },
+        },
+        preferences: {
+          type: 'object',
+          properties: {
+            notifications: { type: 'boolean' },
+            theme: {
+              type: 'string',
+              enum: ['light', 'dark', 'auto'],
+            },
+          },
+        },
+        tags: {
+          type: 'array',
+          items: { type: 'string' },
+          maxItems: 20,
+        },
+      },
+    },
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          data: { type: 'object' },
+          validated: { type: 'boolean' },
+        },
+      },
+    },
+  },
+};
+
+const postValidateEnumsSchema = {
+  schema: {
+    description: 'Test enum validation in POST body',
+    tags: ['Bearer Token - Validation'],
+    security: [{ bearerAuth: [] }],
+    body: {
+      type: 'object',
+      required: ['status', 'priority'],
+      properties: {
+        status: {
+          type: 'string',
+          enum: ['draft', 'pending', 'approved', 'rejected', 'published'],
+        },
+        priority: {
+          type: 'integer',
+          enum: [1, 2, 3, 4, 5],
+        },
+        category: {
+          type: 'string',
+          enum: ['bug', 'feature', 'enhancement', 'documentation'],
+        },
+        severity: {
+          type: 'string',
+          enum: ['low', 'medium', 'high', 'critical'],
+        },
+      },
+    },
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          received: { type: 'object' },
+        },
+      },
+    },
+  },
+};
+
+// XML endpoints with validation
+const postValidateXmlSchema = {
+  schema: {
+    description: 'Test XML body validation with constraints',
+    tags: ['Bearer Token - Validation'],
+    security: [{ bearerAuth: [] }],
+    consumes: ['application/xml', 'text/xml'],
+    body: {
+      type: 'string',
+      description: 'XML payload',
+    },
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean' },
+          parsed: { type: 'object' },
+          validated: { type: 'boolean' },
+        },
+      },
+    },
+  },
+};
+
+const getValidateXmlSchema = {
+  schema: {
+    description: 'Test XML response with query parameters',
+    tags: ['Bearer Token - Validation'],
+    security: [{ bearerAuth: [] }],
+    produces: ['application/xml'],
+    querystring: {
+      type: 'object',
+      properties: {
+        format: {
+          type: 'string',
+          enum: ['compact', 'pretty'],
+          default: 'pretty',
+        },
+        includeMetadata: {
+          type: 'boolean',
+          default: false,
+        },
+        recordId: {
+          type: 'string',
+          format: 'uuid',
+        },
+      },
+    },
+    response: {
+      200: {
+        type: 'string',
+        description: 'XML response',
+      },
+    },
+  },
+};
+
 export default async function bearerTokenRoutes(fastify: FastifyInstance) {
   // Public auth endpoints (no middleware)
   fastify.post('/login', loginSchema, bearerTokenController.login);
@@ -593,6 +1097,72 @@ export default async function bearerTokenRoutes(fastify: FastifyInstance) {
       '/categories/:category/items',
       getCategoryItemsSchema,
       bearerTokenController.getCategoryItems,
+    );
+
+    // Validation endpoints - GET with query parameters
+    authenticatedRoutes.get(
+      '/validate/dates',
+      validateDatesSchema,
+      bearerTokenController.validateDates,
+    );
+    authenticatedRoutes.get(
+      '/validate/numbers',
+      validateNumbersSchema,
+      bearerTokenController.validateNumbers,
+    );
+    authenticatedRoutes.get(
+      '/validate/uuid/:id',
+      validateUuidSchema,
+      bearerTokenController.validateUuid,
+    );
+    authenticatedRoutes.get(
+      '/validate/enums',
+      validateEnumsSchema,
+      bearerTokenController.validateEnums,
+    );
+    authenticatedRoutes.get(
+      '/validate/constraints',
+      validateConstraintsSchema,
+      bearerTokenController.validateConstraints,
+    );
+    authenticatedRoutes.get(
+      '/validate/arrays',
+      validateArraysSchema,
+      bearerTokenController.validateArrays,
+    );
+
+    // Validation endpoints - POST with body validation
+    authenticatedRoutes.post(
+      '/validate/dates',
+      postValidateDatesSchema,
+      bearerTokenController.postValidateDates,
+    );
+    authenticatedRoutes.post(
+      '/validate/numbers',
+      postValidateNumbersSchema,
+      bearerTokenController.postValidateNumbers,
+    );
+    authenticatedRoutes.post(
+      '/validate/complex',
+      postValidateComplexSchema,
+      bearerTokenController.postValidateComplex,
+    );
+    authenticatedRoutes.post(
+      '/validate/enums',
+      postValidateEnumsSchema,
+      bearerTokenController.postValidateEnums,
+    );
+
+    // XML validation endpoints
+    authenticatedRoutes.post(
+      '/validate/xml',
+      postValidateXmlSchema,
+      bearerTokenController.postValidateXml,
+    );
+    authenticatedRoutes.get(
+      '/validate/xml',
+      getValidateXmlSchema,
+      bearerTokenController.getValidateXml,
     );
   });
 }

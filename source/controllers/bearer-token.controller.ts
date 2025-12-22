@@ -358,4 +358,399 @@ export const bearerTokenController = {
       count: categoryItems.length,
     });
   },
+
+  // Validation endpoints - GET with query parameters
+  async validateDates(
+    request: FastifyRequest<{
+      Querystring: {
+        isoDate?: string;
+        dateOnly?: string;
+        timestamp?: number;
+        customFormat?: string;
+      };
+    }>,
+    reply: FastifyReply,
+  ) {
+    const { isoDate, dateOnly, timestamp, customFormat } = request.query;
+
+    const parsed: any = {};
+    if (isoDate) {
+      parsed.isoDate = {
+        original: isoDate,
+        parsed: new Date(isoDate).toISOString(),
+        valid: !isNaN(new Date(isoDate).getTime()),
+      };
+    }
+    if (dateOnly) {
+      parsed.dateOnly = {
+        original: dateOnly,
+        parsed: new Date(dateOnly).toISOString(),
+        valid: !isNaN(new Date(dateOnly).getTime()),
+      };
+    }
+    if (timestamp) {
+      parsed.timestamp = {
+        original: timestamp,
+        parsed: new Date(timestamp * 1000).toISOString(),
+        valid: timestamp > 0,
+      };
+    }
+    if (customFormat) {
+      const parts = customFormat.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (parts) {
+        const date = new Date(`${parts[3]}-${parts[1]}-${parts[2]}`);
+        parsed.customFormat = {
+          original: customFormat,
+          parsed: date.toISOString(),
+          valid: !isNaN(date.getTime()),
+        };
+      }
+    }
+
+    return reply.send({
+      success: true,
+      received: { isoDate, dateOnly, timestamp, customFormat },
+      parsed,
+    });
+  },
+
+  async validateNumbers(
+    request: FastifyRequest<{
+      Querystring: {
+        integer?: number;
+        positiveInt?: number;
+        rangeInt?: number;
+        decimal?: number;
+        percentage?: number;
+      };
+    }>,
+    reply: FastifyReply,
+  ) {
+    const { integer, positiveInt, rangeInt, decimal, percentage } = request.query;
+
+    const types: any = {};
+    if (integer !== undefined)
+      types.integer = {
+        value: integer,
+        type: typeof integer,
+        isInteger: Number.isInteger(integer),
+      };
+    if (positiveInt !== undefined)
+      types.positiveInt = {
+        value: positiveInt,
+        type: typeof positiveInt,
+        isInteger: Number.isInteger(positiveInt),
+      };
+    if (rangeInt !== undefined)
+      types.rangeInt = {
+        value: rangeInt,
+        type: typeof rangeInt,
+        isInteger: Number.isInteger(rangeInt),
+      };
+    if (decimal !== undefined) types.decimal = { value: decimal, type: typeof decimal };
+    if (percentage !== undefined) types.percentage = { value: percentage, type: typeof percentage };
+
+    return reply.send({
+      success: true,
+      received: { integer, positiveInt, rangeInt, decimal, percentage },
+      types,
+    });
+  },
+
+  async validateUuid(
+    request: FastifyRequest<{
+      Params: { id: string };
+      Querystring: { correlationId?: string };
+    }>,
+    reply: FastifyReply,
+  ) {
+    const { id } = request.params;
+    const { correlationId } = request.query;
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const isValidUuid = uuidRegex.test(id);
+    const isValidCorrelationId = correlationId ? uuidRegex.test(correlationId) : null;
+
+    return reply.send({
+      success: true,
+      id,
+      correlationId: correlationId || null,
+      isValidUuid,
+      isValidCorrelationId,
+    });
+  },
+
+  async validateEnums(
+    request: FastifyRequest<{
+      Querystring: {
+        status?: string;
+        priority?: number;
+        color?: string;
+      };
+    }>,
+    reply: FastifyReply,
+  ) {
+    const { status, priority, color } = request.query;
+
+    return reply.send({
+      success: true,
+      received: {
+        status,
+        priority,
+        color,
+      },
+    });
+  },
+
+  async validateConstraints(
+    request: FastifyRequest<{
+      Querystring: {
+        email?: string;
+        username?: string;
+        zipCode?: string;
+        url?: string;
+      };
+    }>,
+    reply: FastifyReply,
+  ) {
+    const { email, username, zipCode, url } = request.query;
+
+    const validated: any = {};
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      validated.email = { value: email, valid: emailRegex.test(email) };
+    }
+    if (username) {
+      const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
+      validated.username = {
+        value: username,
+        valid: usernameRegex.test(username),
+        length: username.length,
+      };
+    }
+    if (zipCode) {
+      const zipRegex = /^\d{5}(-\d{4})?$/;
+      validated.zipCode = { value: zipCode, valid: zipRegex.test(zipCode) };
+    }
+    if (url) {
+      try {
+        new URL(url);
+        validated.url = { value: url, valid: true };
+      } catch {
+        validated.url = { value: url, valid: false };
+      }
+    }
+
+    return reply.send({
+      success: true,
+      received: { email, username, zipCode, url },
+      validated,
+    });
+  },
+
+  async validateArrays(
+    request: FastifyRequest<{
+      Querystring: {
+        tags?: string[];
+        ids?: number[];
+      };
+    }>,
+    reply: FastifyReply,
+  ) {
+    const { tags, ids } = request.query;
+
+    const counts: any = {};
+    if (tags) {
+      counts.tags = { count: Array.isArray(tags) ? tags.length : 1, items: tags };
+    }
+    if (ids) {
+      const idArray = Array.isArray(ids) ? ids : [ids];
+      const unique = [...new Set(idArray)];
+      counts.ids = { count: idArray.length, uniqueCount: unique.length, items: idArray };
+    }
+
+    return reply.send({
+      success: true,
+      received: { tags, ids },
+      counts,
+    });
+  },
+
+  // POST validation endpoints
+  async postValidateDates(
+    request: FastifyRequest<{
+      Body: {
+        eventDate: string;
+        startDate?: string;
+        endDate?: string;
+        timestamp?: number;
+      };
+    }>,
+    reply: FastifyReply,
+  ) {
+    const { eventDate, startDate, endDate, timestamp } = request.body;
+
+    const parsed: any = {
+      eventDate: {
+        original: eventDate,
+        parsed: new Date(eventDate).toISOString(),
+        dayOfWeek: new Date(eventDate).toLocaleDateString('en-US', { weekday: 'long' }),
+      },
+    };
+
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      parsed.dateRange = {
+        start: start.toISOString(),
+        end: end.toISOString(),
+        durationDays: diffDays,
+      };
+    }
+
+    if (timestamp) {
+      parsed.timestamp = {
+        original: timestamp,
+        parsed: new Date(timestamp * 1000).toISOString(),
+      };
+    }
+
+    return reply.send({
+      success: true,
+      received: request.body,
+      parsed,
+    });
+  },
+
+  async postValidateNumbers(
+    request: FastifyRequest<{
+      Body: {
+        quantity: number;
+        price: number;
+        discount?: number;
+        rating?: number;
+      };
+    }>,
+    reply: FastifyReply,
+  ) {
+    const { quantity, price, discount, rating } = request.body;
+
+    const subtotal = quantity * price;
+    const discountAmount = discount ? (subtotal * discount) / 100 : 0;
+    const total = subtotal - discountAmount;
+
+    return reply.send({
+      success: true,
+      data: request.body,
+      calculated: {
+        subtotal: parseFloat(subtotal.toFixed(2)),
+        discountAmount: parseFloat(discountAmount.toFixed(2)),
+        total: parseFloat(total.toFixed(2)),
+        averageRating: rating || 0,
+      },
+    });
+  },
+
+  async postValidateComplex(
+    request: FastifyRequest<{
+      Body: {
+        userId: string;
+        profile: {
+          name: string;
+          email: string;
+          age?: number;
+          status?: string;
+        };
+        preferences?: {
+          notifications?: boolean;
+          theme?: string;
+        };
+        tags?: string[];
+      };
+    }>,
+    reply: FastifyReply,
+  ) {
+    const data = request.body;
+
+    return reply.send({
+      success: true,
+      data,
+      validated: true,
+      metadata: {
+        userId: data.userId,
+        profileComplete: !!(data.profile.name && data.profile.email && data.profile.age),
+        hasPreferences: !!data.preferences,
+        tagCount: data.tags?.length || 0,
+      },
+    });
+  },
+
+  async postValidateEnums(
+    request: FastifyRequest<{
+      Body: {
+        status: string;
+        priority: number;
+        category?: string;
+        severity?: string;
+      };
+    }>,
+    reply: FastifyReply,
+  ) {
+    return reply.send({
+      success: true,
+      received: request.body,
+    });
+  },
+
+  async postValidateXml(request: FastifyRequest<{ Body: string }>, reply: FastifyReply) {
+    const xmlBody = request.body;
+
+    // Simple XML parsing simulation
+    const parsed: any = {
+      receivedLength: xmlBody.length,
+      contentType: request.headers['content-type'],
+      isXml: xmlBody.includes('<?xml') || xmlBody.includes('<'),
+    };
+
+    // Try to extract some basic info
+    const rootMatch = xmlBody.match(/<(\w+)[^>]*>/);
+    if (rootMatch) {
+      parsed.rootElement = rootMatch[1];
+    }
+
+    return reply.send({
+      success: true,
+      parsed,
+      validated: parsed.isXml,
+    });
+  },
+
+  async getValidateXml(
+    request: FastifyRequest<{
+      Querystring: {
+        format?: string;
+        includeMetadata?: boolean;
+        recordId?: string;
+      };
+    }>,
+    reply: FastifyReply,
+  ) {
+    const { format, includeMetadata, recordId } = request.query;
+
+    const metadata = includeMetadata
+      ? `  <metadata>\n    <timestamp>${new Date().toISOString()}</timestamp>\n    <version>1.0</version>\n  </metadata>\n`
+      : '';
+
+    const recordData = recordId
+      ? `  <record id="${recordId}">\n    <name>Sample Record</name>\n    <status>active</status>\n  </record>\n`
+      : '';
+
+    const xml =
+      format === 'compact'
+        ? `<?xml version="1.0" encoding="UTF-8"?><response><success>true</success>${metadata ? `<metadata><timestamp>${new Date().toISOString()}</timestamp><version>1.0</version></metadata>` : ''}${recordData ? `<record id="${recordId}"><name>Sample Record</name><status>active</status></record>` : ''}</response>`
+        : `<?xml version="1.0" encoding="UTF-8"?>\n<response>\n  <success>true</success>\n${metadata}${recordData}</response>`;
+
+    return reply.type('application/xml').send(xml);
+  },
 };
