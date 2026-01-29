@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { validatedSessionCookies } from '../config/credentials';
+import { getDatabase } from '../database/database.service';
 
 export function cookieSessionMiddleware(
   request: FastifyRequest,
@@ -15,13 +15,22 @@ export function cookieSessionMiddleware(
     });
   }
 
-  // Check if the session cookie is valid
-  const isValid = validatedSessionCookies.has(sessionCookie);
+  const db = getDatabase();
+  const session = db.getSession(sessionCookie);
 
-  if (!isValid) {
+  if (!session) {
     return reply.code(401).send({
       error: 'Unauthorized',
       message: 'Invalid or expired session',
+    });
+  }
+
+  // Check if session has expired
+  if (new Date() > new Date(session.expires_at)) {
+    db.deleteSession(sessionCookie);
+    return reply.code(401).send({
+      error: 'Unauthorized',
+      message: 'Session has expired',
     });
   }
 

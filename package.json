@@ -4,11 +4,18 @@
     "description": "A Fastify-based Web API server to test access control mechanisms",
     "main": "dist/index.js",
     "scripts": {
-        "build": "tsc",
+        "build": "tsc && mkdir -p dist/database && cp source/database/schema.sql dist/database/",
         "dev": "tsx watch source/index.ts",
         "start": "node dist/index.js",
         "lint": "eslint source --ext .ts",
-        "format": "prettier --write \"source/**/*.ts\""
+        "format": "prettier --write \"source/**/*.ts\"",
+        "db:seed": "npm run build && node scripts/db-manager.js seed",
+        "db:reset": "npm run build && node scripts/db-manager.js reset",
+        "db:stats": "npm run build && node scripts/db-manager.js stats",
+        "db:clean-sessions": "npm run build && node scripts/db-manager.js clean-sessions",
+        "db:export-users": "npm run build && node scripts/db-manager.js export-users",
+        "db:delete": "node scripts/db-manager.js delete",
+        "db:help": "node scripts/db-manager.js help"
     },
     "keywords": [
         "fastify",
@@ -26,6 +33,8 @@
         "@fastify/multipart": "^8.3.0",
         "@fastify/swagger": "^8.15.0",
         "@fastify/swagger-ui": "^4.1.0",
+        "@types/better-sqlite3": "^7.6.13",
+        "better-sqlite3": "^12.6.2",
         "fastify": "^4.28.1",
         "pino": "^9.4.0",
         "pino-pretty": "^11.2.2"

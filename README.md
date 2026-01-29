@@ -2,6 +2,8 @@
 
 A comprehensive Fastify-based TypeScript Web API server designed to test various access control mechanisms. This API is built to work with the API Annealing project, providing exhaustive coverage of authentication methods, request/response formats, and file upload capabilities.
 
+**🐳 Docker Ready**: Easily deploy with `docker-compose up -d` - see [DOCKER.md](DOCKER.md)
+
 ## Features
 
 - **Multiple Authentication Methods:**
@@ -13,6 +15,7 @@ A comprehensive Fastify-based TypeScript Web API server designed to test various
 
 - **Shopping Workflow (Cookie Session):**
   - Complete e-commerce simulation for JMeter load testing
+  - SQLite database with 150 test users and 75 products
   - User authentication with login/validate/logout
   - Product catalog with pagination and filtering
   - Shopping cart management
@@ -21,6 +24,14 @@ A comprehensive Fastify-based TypeScript Web API server designed to test various
   - User profile management
   - Payment method management
   - See [SHOPPING_WORKFLOW.md](SHOPPING_WORKFLOW.md) for detailed documentation
+
+- **Database Features:**
+  - Embedded SQLite database (zero configuration)
+  - Auto-seeding with realistic test data
+  - Supports 100+ concurrent users
+  - Easy database management CLI
+  - Credential export for JMeter
+  - See [DATABASE.md](DATABASE.md) for details
 
 - **Multiple Content Types:**
   - JSON (application/json)
@@ -39,6 +50,13 @@ A comprehensive Fastify-based TypeScript Web API server designed to test various
   - Interactive Swagger UI
   - All endpoints and authentication methods documented
 
+- **Docker Deployment:**
+  - Production-ready Dockerfile
+  - Docker Compose configuration
+  - Persistent database volumes
+  - Health checks included
+  - See [DOCKER.md](DOCKER.md) for deployment guide
+
 ## Project Structure
 
 ```
@@ -53,22 +71,35 @@ Test-AccessControl/
 │   │   ├── api-key.controller.ts
 │   │   ├── bearer-token.controller.ts
 │   │   ├── oauth2.controller.ts
+│   │   ├── cookie-session.controller.ts  # Shopping workflow
 │   │   ├── public.controller.ts
 │   │   └── upload.controller.ts
+│   ├── database/
+│   │   ├── schema.sql             # Database schema
+│   │   ├── database.service.ts    # Database operations
+│   │   └── seed.ts                # Test data seeding
 │   ├── middleware/
 │   │   ├── basic-auth.middleware.ts
 │   │   ├── api-key.middleware.ts
 │   │   ├── bearer-token.middleware.ts
+│   │   ├── cookie-session.middleware.ts
 │   │   └── oauth2.middleware.ts
 │   ├── routes/
 │   │   ├── basic-auth.routes.ts
 │   │   ├── api-key.routes.ts
 │   │   ├── bearer-token.routes.ts
 │   │   ├── oauth2.routes.ts
+│   │   ├── cookie-session.routes.ts
 │   │   ├── public.routes.ts
 │   │   └── upload.routes.ts
 │   ├── app.ts                    # Fastify app setup
 │   └── index.ts                  # Entry point
+├── scripts/
+│   └── db-manager.js             # Database management CLI
+├── data/
+│   └── shopping.db               # SQLite database (auto-created)
+├── Dockerfile
+├── docker-compose.yml
 ├── package.json
 ├── tsconfig.json
 └── README.md
@@ -76,6 +107,8 @@ Test-AccessControl/
 
 ## Documentation
 
+- **[DOCKER.md](DOCKER.md)** - Docker deployment guide with compose and CLI examples
+- **[DATABASE.md](DATABASE.md)** - Database schema, seeding, and management
 - **[SHOPPING_WORKFLOW.md](SHOPPING_WORKFLOW.md)** - Complete shopping workflow API documentation
 - **[JMETER_GUIDE.md](JMETER_GUIDE.md)** - Detailed JMeter load testing guide
 - **[CREDENTIALS.md](CREDENTIALS.md)** - Test credentials reference
@@ -83,7 +116,29 @@ Test-AccessControl/
 
 ## Quick Start
 
-### Running the Server
+### Option 1: Docker (Recommended)
+
+```bash
+# Start with Docker Compose
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Export user credentials for JMeter
+curl http://localhost:3000/api/cookie-session/credentials/export > users.csv
+
+# Database management
+docker-compose exec test-accesscontrol npm run db:stats
+docker-compose exec test-accesscontrol npm run db:reset
+
+# Stop
+docker-compose down
+```
+
+See [DOCKER.md](DOCKER.md) for complete deployment guide.
+
+### Option 2: Local Development
 
 ```bash
 # Install dependencies
@@ -100,6 +155,30 @@ npm start
 ```
 
 The server will start on `http://0.0.0.0:3000` by default.
+
+### Database Management
+
+```bash
+# Seed database with test data (150 users, 75 products)
+npm run db:seed
+
+# Reset database (delete and re-seed)
+npm run db:reset
+
+# Show database statistics
+npm run db:stats
+
+# Export user credentials for JMeter
+npm run db:export-users
+
+# Clean expired sessions
+npm run db:clean-sessions
+
+# Delete database completely
+npm run db:delete
+```
+
+See [DATABASE.md](DATABASE.md) for complete database documentation.
 
 ## API Documentation
 

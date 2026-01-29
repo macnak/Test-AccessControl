@@ -1,16 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { sampleUsers, sampleProducts } from '../config/sample-data';
-import {
-  userAccounts,
-  pendingCookieAuth,
-  validatedSessionCookies,
-  shoppingCarts,
-  paymentMethods,
-  userOrders,
-  sessionToEmail,
-  PaymentMethod,
-  Order,
-} from '../config/credentials';
+import { getDatabase } from '../database/database.service';
+import { sampleUsers } from '../config/sample-data';
 import crypto from 'crypto';
 
 interface LoginBody {
@@ -41,10 +31,10 @@ export const cookieSessionController = {
       });
     }
 
-    // Find user account
-    const user = userAccounts.find((u) => u.email === email && u.password === password);
+    const db = getDatabase();
+    const user = db.getUserByEmail(email);
 
-    if (!user) {
+    if (!user || user.password !== password) {
       return reply.code(401).send({
         success: false,
         error: 'Unauthorized',
@@ -55,15 +45,10 @@ export const cookieSessionController = {
     // Generate temporary token and verification code
     const tempToken = `temp-cookie-${crypto.randomBytes(16).toString('hex')}`;
     const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit code
-    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
     // Store pending auth request
-    pendingCookieAuth.set(tempToken, {
-      tempToken,
-      code,
-      email,
-      expiresAt,
-    });
+    db.createPendingAuth(tempToken, code, email, expiresAt);
 
     return reply.send({
       success: true,
@@ -86,8 +71,8 @@ export const cookieSessionController = {
       });
     }
 
-    // Check if pending auth exists
-    const pending = pendingCookieAuth.get(token);
+    const db = getDatabase();
+    const pending = db.getPendingAuth(token);
 
     if (!pending) {
       return reply.code(401).send({
@@ -98,8 +83,8 @@ export const cookieSessionController = {
     }
 
     // Check if expired
-    if (Date.now() > pending.expiresAt) {
-      pendingCookieAuth.delete(token);
+    if (new Date() > new Date(pending.expires_at)) {
+      db.deletePendingAuth(token);
       return reply.code(401).send({
         success: false,
         error: 'Unauthorized',
@@ -116,20 +101,24 @@ export const cookieSessionController = {
       });
     }
 
-    // Generate session cookie
-    const sessionId = `session-${crypto.randomBytes(24).toString('hex')}`;
-    validatedSessionCookies.add(sessionId);
-
-    // Map session to email for shopping features
-    sessionToEmail.set(sessionId, pending.email);
-
-    // Initialize shopping cart for user
-    if (!shoppingCarts.has(sessionId)) {
-      shoppingCarts.set(sessionId, { items: [] });
+    // Get user
+    const user = db.getUserByEmail(pending.email);
+    if (!user) {
+      return reply.code(401).send({
+        success: false,
+        error: 'Unauthorized',
+        message: 'User not found',
+      });
     }
 
+    // Generate session cookie
+    const sessionId = `session-${crypto.randomBytes(24).toString('hex')}`;
+    const sessionExpiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    db.createSession(sessionId, user.id, user.email, sessionExpiresAt);
+
     // Clean up pending auth
-    pendingCookieAuth.delete(token);
+    db.deletePendingAuth(token);
 
     // Set the session cookie
     reply.setCookie('sessionId', sessionId, {
@@ -153,9 +142,8 @@ export const cookieSessionController = {
     const sessionCookie = request.cookies.sessionId;
 
     if (sessionCookie) {
-      validatedSessionCookies.delete(sessionCookie);
-      shoppingCarts.delete(sessionCookie);
-      sessionToEmail.delete(sessionCookie);
+      const db = getDatabase();
+      db.deleteSession(sessionCookie);
     }
 
     reply.clearCookie('sessionId', { path: '/' });
@@ -166,12 +154,24 @@ export const cookieSessionController = {
     });
   },
 
+  // Helper to get session
+  getSessionFromRequest(request: FastifyRequest) {
+    const sessionId = request.cookies.sessionId;
+    if (!sessionId) return null;
+
+    const db = getDatabase();
+    return db.getSession(sessionId);
+  },
+
   // JSON Response
   async getJson(_request: FastifyRequest, reply: FastifyReply) {
+    const db = getDatabase();
+    const products = db.getProducts({ limit: 2 });
+
     return reply.send({
       success: true,
       message: 'Authenticated with Session Cookie',
-      data: { users: sampleUsers.slice(0, 2), products: sampleProducts.slice(0, 2) },
+      data: { users: sampleUsers.slice(0, 2), products },
     });
   },
 
@@ -231,7 +231,7 @@ export const cookieSessionController = {
     );
     return reply
       .type('application/octet-stream')
-      .header('Content-Disposition', 'attachment; filename=\"data.bin\"')
+      .header('Content-Disposition', 'attachment; filename="data.bin"')
       .send(buffer);
   },
 
@@ -362,7 +362,8 @@ export const cookieSessionController = {
     reply: FastifyReply,
   ) {
     const { productId } = request.params;
-    const product = sampleProducts.find((p) => p.id.toString() === productId);
+    const db = getDatabase();
+    const product = db.getProductById(parseInt(productId));
 
     if (!product) {
       return reply.code(404).send({
@@ -400,9 +401,8 @@ export const cookieSessionController = {
     reply: FastifyReply,
   ) {
     const { category } = request.params;
-    const categoryItems = sampleProducts.filter(
-      (p) => p.category.toLowerCase() === category.toLowerCase(),
-    );
+    const db = getDatabase();
+    const categoryItems = db.getProducts({ category, limit: 100 });
 
     return reply.send({
       success: true,
@@ -816,7 +816,7 @@ ${metadata}${recordData}</response>`;
     return reply.type('application/xml').send(xml);
   },
 
-  // ========== SHOPPING WORKFLOW ENDPOINTS ==========
+  // ========== SHOPPING WORKFLOW ENDPOINTS (DATABASE-BACKED) ==========
 
   // Get list of products with pagination
   async getProducts(
@@ -833,40 +833,34 @@ ${metadata}${recordData}</response>`;
   ) {
     const { page = 1, limit = 10, category, sortBy = 'name', sortOrder = 'asc' } = request.query;
 
-    let products = [...sampleProducts];
+    const db = getDatabase();
+    const offset = (page - 1) * limit;
 
-    // Filter by category if provided
-    if (category) {
-      products = products.filter((p) => p.category.toLowerCase() === category.toLowerCase());
-    }
-
-    // Sort products
-    products.sort((a, b) => {
-      if (sortBy === 'price') {
-        return sortOrder === 'asc' ? a.price - b.price : b.price - a.price;
-      }
-      return sortOrder === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+    const products = db.getProducts({
+      category,
+      sortBy,
+      sortOrder,
+      limit,
+      offset,
     });
 
-    // Pagination
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedProducts = products.slice(startIndex, endIndex);
+    const totalProducts = db.getProductCount(category);
 
     return reply.send({
       success: true,
       page,
       limit,
-      totalProducts: products.length,
-      totalPages: Math.ceil(products.length / limit),
-      products: paginatedProducts,
+      totalProducts,
+      totalPages: Math.ceil(totalProducts / limit),
+      products,
     });
   },
 
   // Get product by ID
   async getProduct(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
     const productId = parseInt(request.params.id);
-    const product = sampleProducts.find((p) => p.id === productId);
+    const db = getDatabase();
+    const product = db.getProductById(productId);
 
     if (!product) {
       return reply.code(404).send({
@@ -885,13 +879,16 @@ ${metadata}${recordData}</response>`;
   // Get shopping cart
   async getCart(request: FastifyRequest, reply: FastifyReply) {
     const sessionId = request.cookies.sessionId!;
-    const cart = shoppingCarts.get(sessionId) || { items: [] };
+    const db = getDatabase();
+    const cartItems = db.getCart(sessionId);
 
     // Enrich cart items with product details
-    const enrichedItems = cart.items.map((item) => {
-      const product = sampleProducts.find((p) => p.id === item.productId);
+    const enrichedItems = cartItems.map((item) => {
+      const product = db.getProductById(item.product_id);
       return {
-        ...item,
+        productId: item.product_id,
+        quantity: item.quantity,
+        addedAt: item.added_at,
         productName: product?.name,
         productPrice: product?.price,
         subtotal: product ? product.price * item.quantity : 0,
@@ -904,8 +901,8 @@ ${metadata}${recordData}</response>`;
       success: true,
       cart: {
         items: enrichedItems,
-        itemCount: cart.items.length,
-        totalItems: cart.items.reduce((sum, item) => sum + item.quantity, 0),
+        itemCount: cartItems.length,
+        totalItems: cartItems.reduce((sum, item) => sum + item.quantity, 0),
         total: parseFloat(total.toFixed(2)),
       },
     });
@@ -932,8 +929,10 @@ ${metadata}${recordData}</response>`;
       });
     }
 
+    const db = getDatabase();
+
     // Verify product exists
-    const product = sampleProducts.find((p) => p.id === productId);
+    const product = db.getProductById(productId);
     if (!product) {
       return reply.code(404).send({
         success: false,
@@ -942,31 +941,15 @@ ${metadata}${recordData}</response>`;
       });
     }
 
-    // Get or create cart
-    let cart = shoppingCarts.get(sessionId);
-    if (!cart) {
-      cart = { items: [] };
-      shoppingCarts.set(sessionId, cart);
-    }
-
-    // Check if item already in cart
-    const existingItem = cart.items.find((item) => item.productId === productId);
-    if (existingItem) {
-      existingItem.quantity += quantity;
-    } else {
-      cart.items.push({
-        productId,
-        quantity,
-        addedAt: new Date().toISOString(),
-      });
-    }
+    db.addToCart(sessionId, productId, quantity);
+    const cartItems = db.getCart(sessionId);
 
     return reply.send({
       success: true,
       message: `Added ${quantity} x ${product.name} to cart`,
       cart: {
-        itemCount: cart.items.length,
-        totalItems: cart.items.reduce((sum, item) => sum + item.quantity, 0),
+        itemCount: cartItems.length,
+        totalItems: cartItems.reduce((sum, item) => sum + item.quantity, 0),
       },
     });
   },
@@ -983,7 +966,7 @@ ${metadata}${recordData}</response>`;
     const productId = parseInt(request.params.productId);
     const { quantity } = request.body;
 
-    if (!quantity || quantity < 0) {
+    if (quantity === undefined || quantity < 0) {
       return reply.code(400).send({
         success: false,
         error: 'Bad Request',
@@ -991,39 +974,12 @@ ${metadata}${recordData}</response>`;
       });
     }
 
-    const cart = shoppingCarts.get(sessionId);
-    if (!cart) {
-      return reply.code(404).send({
-        success: false,
-        error: 'Not Found',
-        message: 'Cart not found',
-      });
-    }
-
-    const itemIndex = cart.items.findIndex((item) => item.productId === productId);
-    if (itemIndex === -1) {
-      return reply.code(404).send({
-        success: false,
-        error: 'Not Found',
-        message: `Product ${productId} not in cart`,
-      });
-    }
-
-    if (quantity === 0) {
-      // Remove item from cart
-      cart.items.splice(itemIndex, 1);
-      return reply.send({
-        success: true,
-        message: 'Item removed from cart',
-      });
-    }
-
-    cart.items[itemIndex].quantity = quantity;
+    const db = getDatabase();
+    db.updateCartItem(sessionId, productId, quantity);
 
     return reply.send({
       success: true,
-      message: 'Cart item updated',
-      item: cart.items[itemIndex],
+      message: quantity === 0 ? 'Item removed from cart' : 'Cart item updated',
     });
   },
 
@@ -1035,25 +991,8 @@ ${metadata}${recordData}</response>`;
     const sessionId = request.cookies.sessionId!;
     const productId = parseInt(request.params.productId);
 
-    const cart = shoppingCarts.get(sessionId);
-    if (!cart) {
-      return reply.code(404).send({
-        success: false,
-        error: 'Not Found',
-        message: 'Cart not found',
-      });
-    }
-
-    const itemIndex = cart.items.findIndex((item) => item.productId === productId);
-    if (itemIndex === -1) {
-      return reply.code(404).send({
-        success: false,
-        error: 'Not Found',
-        message: `Product ${productId} not in cart`,
-      });
-    }
-
-    cart.items.splice(itemIndex, 1);
+    const db = getDatabase();
+    db.removeFromCart(sessionId, productId);
 
     return reply.send({
       success: true,
@@ -1064,7 +1003,8 @@ ${metadata}${recordData}</response>`;
   // Clear cart
   async clearCart(request: FastifyRequest, reply: FastifyReply) {
     const sessionId = request.cookies.sessionId!;
-    shoppingCarts.set(sessionId, { items: [] });
+    const db = getDatabase();
+    db.clearCart(sessionId);
 
     return reply.send({
       success: true,
@@ -1083,18 +1023,28 @@ ${metadata}${recordData}</response>`;
     reply: FastifyReply,
   ) {
     const sessionId = request.cookies.sessionId!;
-    const email = sessionToEmail.get(sessionId);
+    const db = getDatabase();
 
-    if (!email) {
+    const session = db.getSession(sessionId);
+    if (!session) {
       return reply.code(401).send({
         success: false,
         error: 'Unauthorized',
-        message: 'Session email not found',
+        message: 'Session not found',
       });
     }
 
-    const cart = shoppingCarts.get(sessionId);
-    if (!cart || cart.items.length === 0) {
+    const user = db.getUserById(session.user_id);
+    if (!user) {
+      return reply.code(401).send({
+        success: false,
+        error: 'Unauthorized',
+        message: 'User not found',
+      });
+    }
+
+    const cartItems = db.getCart(sessionId);
+    if (cartItems.length === 0) {
       return reply.code(400).send({
         success: false,
         error: 'Bad Request',
@@ -1102,55 +1052,52 @@ ${metadata}${recordData}</response>`;
       });
     }
 
-    const user = userAccounts.find((u) => u.email === email);
     const { paymentMethodId, shippingAddress } = request.body;
 
     // Calculate order details
-    const orderItems = cart.items.map((item) => {
-      const product = sampleProducts.find((p) => p.id === item.productId)!;
-      return {
-        productId: item.productId,
+    const orderItems: Array<{
+      productId: number;
+      productName: string;
+      quantity: number;
+      price: number;
+    }> = [];
+    let total = 0;
+
+    for (const item of cartItems) {
+      const product = db.getProductById(item.product_id)!;
+      orderItems.push({
+        productId: item.product_id,
         productName: product.name,
         quantity: item.quantity,
         price: product.price,
-      };
-    });
-
-    const total = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      });
+      total += product.price * item.quantity;
+    }
 
     // Create order
     const orderId = `ORD-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
-    const order: Order = {
+    const order = db.createOrder(
       orderId,
-      userId: email,
-      items: orderItems,
-      total: parseFloat(total.toFixed(2)),
-      status: 'processing',
-      paymentMethod: paymentMethodId || 'default',
-      shippingAddress: shippingAddress || user?.address || 'No address provided',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    // Store order
-    const orders = userOrders.get(email) || [];
-    orders.push(order);
-    userOrders.set(email, orders);
+      user.id,
+      parseFloat(total.toFixed(2)),
+      paymentMethodId || 'default',
+      shippingAddress || user.address || 'No address provided',
+      orderItems,
+    );
 
     // Clear cart after successful checkout
-    shoppingCarts.set(sessionId, { items: [] });
+    db.clearCart(sessionId);
 
     // Simulate payment processing
     setTimeout(() => {
-      order.status = 'completed';
-      order.updatedAt = new Date().toISOString();
+      db.updateOrderStatus(orderId, 'completed');
     }, 100);
 
     return reply.send({
       success: true,
       message: 'Order placed successfully',
       order: {
-        orderId: order.orderId,
+        orderId: order.id,
         total: order.total,
         status: order.status,
         estimatedDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
@@ -1170,60 +1117,50 @@ ${metadata}${recordData}</response>`;
     reply: FastifyReply,
   ) {
     const sessionId = request.cookies.sessionId!;
-    const email = sessionToEmail.get(sessionId);
+    const db = getDatabase();
 
-    if (!email) {
+    const session = db.getSession(sessionId);
+    if (!session) {
       return reply.code(401).send({
         success: false,
         error: 'Unauthorized',
-        message: 'Session email not found',
+        message: 'Session not found',
       });
     }
 
     const { page = 1, limit = 10, status } = request.query;
+    const offset = (page - 1) * limit;
 
-    let orders = userOrders.get(email) || [];
-
-    // Filter by status if provided
-    if (status) {
-      orders = orders.filter((o) => o.status === status);
-    }
-
-    // Sort by date (newest first)
-    orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-    // Pagination
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedOrders = orders.slice(startIndex, endIndex);
+    const orders = db.getUserOrders(session.user_id, { status, limit, offset });
+    const totalOrders = db.getUserOrderCount(session.user_id, status);
 
     return reply.send({
       success: true,
       page,
       limit,
-      totalOrders: orders.length,
-      totalPages: Math.ceil(orders.length / limit),
-      orders: paginatedOrders,
+      totalOrders,
+      totalPages: Math.ceil(totalOrders / limit),
+      orders,
     });
   },
 
   // Get order by ID
   async getOrder(request: FastifyRequest<{ Params: { orderId: string } }>, reply: FastifyReply) {
     const sessionId = request.cookies.sessionId!;
-    const email = sessionToEmail.get(sessionId);
+    const db = getDatabase();
 
-    if (!email) {
+    const session = db.getSession(sessionId);
+    if (!session) {
       return reply.code(401).send({
         success: false,
         error: 'Unauthorized',
-        message: 'Session email not found',
+        message: 'Session not found',
       });
     }
 
-    const orders = userOrders.get(email) || [];
-    const order = orders.find((o) => o.orderId === request.params.orderId);
+    const order = db.getOrder(request.params.orderId);
 
-    if (!order) {
+    if (!order || order.user_id !== session.user_id) {
       return reply.code(404).send({
         success: false,
         error: 'Not Found',
@@ -1231,26 +1168,32 @@ ${metadata}${recordData}</response>`;
       });
     }
 
+    const items = db.getOrderItems(order.id);
+
     return reply.send({
       success: true,
-      order,
+      order: {
+        ...order,
+        items,
+      },
     });
   },
 
   // Get user profile
   async getProfile(request: FastifyRequest, reply: FastifyReply) {
     const sessionId = request.cookies.sessionId!;
-    const email = sessionToEmail.get(sessionId);
+    const db = getDatabase();
 
-    if (!email) {
+    const session = db.getSession(sessionId);
+    if (!session) {
       return reply.code(401).send({
         success: false,
         error: 'Unauthorized',
-        message: 'Session email not found',
+        message: 'Session not found',
       });
     }
 
-    const user = userAccounts.find((u) => u.email === email);
+    const user = db.getUserById(session.user_id);
 
     if (!user) {
       return reply.code(404).send({
@@ -1283,31 +1226,21 @@ ${metadata}${recordData}</response>`;
     reply: FastifyReply,
   ) {
     const sessionId = request.cookies.sessionId!;
-    const email = sessionToEmail.get(sessionId);
+    const db = getDatabase();
 
-    if (!email) {
+    const session = db.getSession(sessionId);
+    if (!session) {
       return reply.code(401).send({
         success: false,
         error: 'Unauthorized',
-        message: 'Session email not found',
-      });
-    }
-
-    const user = userAccounts.find((u) => u.email === email);
-
-    if (!user) {
-      return reply.code(404).send({
-        success: false,
-        error: 'Not Found',
-        message: 'User not found',
+        message: 'Session not found',
       });
     }
 
     const { name, address, phone } = request.body;
 
-    if (name) user.name = name;
-    if (address) user.address = address;
-    if (phone) user.phone = phone;
+    db.updateUser(session.user_id, { name, address, phone });
+    const user = db.getUserById(session.user_id)!;
 
     return reply.send({
       success: true,
@@ -1324,17 +1257,18 @@ ${metadata}${recordData}</response>`;
   // Get payment methods
   async getPaymentMethods(request: FastifyRequest, reply: FastifyReply) {
     const sessionId = request.cookies.sessionId!;
-    const email = sessionToEmail.get(sessionId);
+    const db = getDatabase();
 
-    if (!email) {
+    const session = db.getSession(sessionId);
+    if (!session) {
       return reply.code(401).send({
         success: false,
         error: 'Unauthorized',
-        message: 'Session email not found',
+        message: 'Session not found',
       });
     }
 
-    const methods = paymentMethods.get(email) || [];
+    const methods = db.getUserPaymentMethods(session.user_id);
 
     return reply.send({
       success: true,
@@ -1356,13 +1290,14 @@ ${metadata}${recordData}</response>`;
     reply: FastifyReply,
   ) {
     const sessionId = request.cookies.sessionId!;
-    const email = sessionToEmail.get(sessionId);
+    const db = getDatabase();
 
-    if (!email) {
+    const session = db.getSession(sessionId);
+    if (!session) {
       return reply.code(401).send({
         success: false,
         error: 'Unauthorized',
-        message: 'Session email not found',
+        message: 'Session not found',
       });
     }
 
@@ -1376,24 +1311,21 @@ ${metadata}${recordData}</response>`;
       });
     }
 
-    const methods = paymentMethods.get(email) || [];
-
     // If this is set as default, unset other defaults
     if (isDefault) {
-      methods.forEach((m) => (m.isDefault = false));
+      db.unsetDefaultPaymentMethods(session.user_id);
     }
 
-    const newMethod: PaymentMethod = {
-      id: `pm-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
+    const paymentId = `pm-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+    const newMethod = db.addPaymentMethod(
+      paymentId,
+      session.user_id,
       type,
       last4,
       expiryMonth,
       expiryYear,
-      isDefault: isDefault || methods.length === 0, // First method is default
-    };
-
-    methods.push(newMethod);
-    paymentMethods.set(email, methods);
+      isDefault,
+    );
 
     return reply.send({
       success: true,
@@ -1415,20 +1347,20 @@ ${metadata}${recordData}</response>`;
     reply: FastifyReply,
   ) {
     const sessionId = request.cookies.sessionId!;
-    const email = sessionToEmail.get(sessionId);
+    const db = getDatabase();
 
-    if (!email) {
+    const session = db.getSession(sessionId);
+    if (!session) {
       return reply.code(401).send({
         success: false,
         error: 'Unauthorized',
-        message: 'Session email not found',
+        message: 'Session not found',
       });
     }
 
-    const methods = paymentMethods.get(email) || [];
-    const method = methods.find((m) => m.id === request.params.paymentMethodId);
+    const method = db.getPaymentMethod(request.params.paymentMethodId);
 
-    if (!method) {
+    if (!method || method.user_id !== session.user_id) {
       return reply.code(404).send({
         success: false,
         error: 'Not Found',
@@ -1438,20 +1370,22 @@ ${metadata}${recordData}</response>`;
 
     const { isDefault, expiryMonth, expiryYear } = request.body;
 
-    if (isDefault !== undefined) {
-      if (isDefault) {
-        methods.forEach((m) => (m.isDefault = false));
-      }
-      method.isDefault = isDefault;
+    if (isDefault) {
+      db.unsetDefaultPaymentMethods(session.user_id);
     }
 
-    if (expiryMonth) method.expiryMonth = expiryMonth;
-    if (expiryYear) method.expiryYear = expiryYear;
+    db.updatePaymentMethod(request.params.paymentMethodId, {
+      is_default: isDefault ? 1 : 0,
+      expiry_month: expiryMonth,
+      expiry_year: expiryYear,
+    });
+
+    const updatedMethod = db.getPaymentMethod(request.params.paymentMethodId)!;
 
     return reply.send({
       success: true,
       message: 'Payment method updated successfully',
-      paymentMethod: method,
+      paymentMethod: updatedMethod,
     });
   },
 
@@ -1461,20 +1395,20 @@ ${metadata}${recordData}</response>`;
     reply: FastifyReply,
   ) {
     const sessionId = request.cookies.sessionId!;
-    const email = sessionToEmail.get(sessionId);
+    const db = getDatabase();
 
-    if (!email) {
+    const session = db.getSession(sessionId);
+    if (!session) {
       return reply.code(401).send({
         success: false,
         error: 'Unauthorized',
-        message: 'Session email not found',
+        message: 'Session not found',
       });
     }
 
-    const methods = paymentMethods.get(email) || [];
-    const methodIndex = methods.findIndex((m) => m.id === request.params.paymentMethodId);
+    const method = db.getPaymentMethod(request.params.paymentMethodId);
 
-    if (methodIndex === -1) {
+    if (!method || method.user_id !== session.user_id) {
       return reply.code(404).send({
         success: false,
         error: 'Not Found',
@@ -1482,12 +1416,25 @@ ${metadata}${recordData}</response>`;
       });
     }
 
-    methods.splice(methodIndex, 1);
-    paymentMethods.set(email, methods);
+    db.deletePaymentMethod(request.params.paymentMethodId);
 
     return reply.send({
       success: true,
       message: 'Payment method deleted successfully',
     });
+  },
+
+  // Export credentials (for JMeter testing)
+  async exportCredentials(_request: FastifyRequest, reply: FastifyReply) {
+    const db = getDatabase();
+    const users = db.getAllUsers(200);
+
+    const csvContent =
+      'email,password,name\n' + users.map((u) => `${u.email},${u.password},"${u.name}"`).join('\n');
+
+    return reply
+      .header('Content-Type', 'text/csv')
+      .header('Content-Disposition', 'attachment; filename="users-credentials.csv"')
+      .send(csvContent);
   },
 };

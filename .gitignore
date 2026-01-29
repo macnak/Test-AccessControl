@@ -6,3 +6,8 @@ dist/
 coverage/
 .vscode/
 uploads/
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/users-export.csv
+*.backup

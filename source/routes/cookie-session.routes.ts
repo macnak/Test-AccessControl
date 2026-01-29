@@ -1027,6 +1027,24 @@ export default async function cookieSessionRoutes(fastify: FastifyInstance) {
   fastify.post('/validate', validateSchema, cookieSessionController.validate);
   fastify.post('/logout', logoutSchema, cookieSessionController.logout);
 
+  // Public credential export endpoint (for JMeter testing)
+  fastify.get(
+    '/credentials/export',
+    {
+      schema: {
+        description: 'Export user credentials for JMeter testing',
+        tags: ['Cookie Session'],
+        response: {
+          200: {
+            type: 'string',
+            description: 'CSV file with user credentials',
+          },
+        },
+      },
+    },
+    cookieSessionController.exportCredentials,
+  );
+
   // Protected endpoints (with cookie session middleware)
   fastify.register(async (authenticatedRoutes) => {
     authenticatedRoutes.addHook('preHandler', cookieSessionMiddleware);
