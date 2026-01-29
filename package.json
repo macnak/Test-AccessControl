@@ -11,6 +11,7 @@
         "format": "prettier --write \"source/**/*.ts\"",
         "db:seed": "npm run build && node scripts/db-manager.js seed",
         "db:reset": "npm run build && node scripts/db-manager.js reset",
+        "db:restock": "npm run build && node scripts/db-manager.js restock",
         "db:stats": "npm run build && node scripts/db-manager.js stats",
         "db:clean-sessions": "npm run build && node scripts/db-manager.js clean-sessions",
         "db:export-users": "npm run build && node scripts/db-manager.js export-users",

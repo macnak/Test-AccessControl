@@ -241,6 +241,16 @@ class DatabaseService {
     return (stmt.get(...params) as { count: number }).count;
   }
 
+  // Restock all products to high levels for performance testing
+  restockAllProducts(minStock: number = 500, maxStock: number = 2000): number {
+    const stmt = this.db.prepare(`
+      UPDATE products 
+      SET stock = ABS(RANDOM()) % (? - ? + 1) + ?
+    `);
+    const result = stmt.run(maxStock, minStock, minStock);
+    return result.changes;
+  }
+
   // Session operations
   createSession(id: string, userId: number, email: string, expiresAt: Date): DbSession {
     const stmt = this.db.prepare(`

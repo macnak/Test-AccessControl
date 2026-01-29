@@ -55,7 +55,16 @@ Product catalog for the shopping workflow.
 - created_at: DATETIME
 ```
 
-**Seeded Data**: 75 products across Electronics, Clothing, Home & Garden categories
+**Seeded Data**: 300+ products across 6 categories:
+
+- Electronics (60 products)
+- Clothing (60 products)
+- Home & Garden (60 products)
+- Sports & Outdoors (60 products)
+- Toys & Games (30 products)
+- Beauty & Health (30 products)
+
+**Stock Levels**: 500-2000 units per product for performance testing
 
 #### 3. sessions
 
@@ -178,6 +187,9 @@ npm run db:seed
 # Reset database (delete and re-seed)
 npm run db:reset
 
+# Restock all products to high levels (for repeated performance tests)
+npm run db:restock
+
 # Show database statistics
 npm run db:stats
 
@@ -201,7 +213,7 @@ Running `npm run db:stats` shows:
 ```
 Database Statistics:
 Users: 150
-Products: 75
+Products: 300
 Active Sessions: X
 Pending Auth Requests: X
 Cart Items: X
@@ -211,6 +223,23 @@ Payment Methods: 30
 Addresses: X
 Database Size: X MB
 ```
+
+### Quick Restock for Performance Testing
+
+Between performance test runs, quickly restock all products without re-seeding the entire database:
+
+```bash
+npm run db:restock
+```
+
+This command:
+
+- Restocks all 300+ products to random levels between 500-2000 units
+- Completes in seconds (much faster than full re-seed)
+- Perfect for running multiple JMeter test iterations
+- Preserves users, orders, and other data
+
+**Use Case**: After a JMeter test depletes product stock, run `npm run db:restock` to prepare for the next test run.
 
 ### User Credentials Export
 
@@ -243,8 +272,9 @@ On application startup:
 
 1. Database is initialized if it doesn't exist
 2. If database is empty (0 users), auto-seeding runs
-3. Creates 150 users, 75 products, 20 sample orders, 30 payment methods
+3. Creates 150 users, 300+ products, 20 sample orders, 30 payment methods
 4. All users have password: `password123`
+5. All products seeded with high stock levels (500-2000 units)
 
 ### Controlling Auto-Seed
 
@@ -271,13 +301,16 @@ npm run db:seed
 
 ### Products
 
-- **Count**: 75 (25 per category)
+- **Count**: 300+ (60 each for major categories, 30 for smaller ones)
 - **Categories**:
-  - Electronics (phones, laptops, cameras)
-  - Clothing (shirts, pants, shoes)
-  - Home & Garden (furniture, tools, decor)
-- **Prices**: Randomized realistic pricing
-- **Stock**: Random stock levels (10-100)
+  - Electronics (60 products) - headphones, keyboards, cameras, monitors, etc.
+  - Clothing (60 products) - shirts, shoes, jackets, pants, etc.
+  - Home & Garden (60 products) - furniture, appliances, tools, decor, etc.
+  - Sports & Outdoors (60 products) - fitness equipment, camping gear, sports items, etc.
+  - Toys & Games (30 products) - board games, LEGO, puzzles, outdoor toys, etc.
+  - Beauty & Health (30 products) - skincare, haircare, wellness products, etc.
+- **Prices**: Randomized realistic pricing ($9.99 - $999.99)
+- **Stock**: High levels for performance testing (500-2000 units per product)
 
 ### Orders
 

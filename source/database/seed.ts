@@ -128,23 +128,41 @@ const electronicProducts = [
   'HDMI Cable',
   'Laptop Sleeve',
   'Phone Case',
-];
-const bookProducts = [
-  'Programming Guide',
-  'Design Patterns',
-  'Clean Code',
-  'JavaScript Handbook',
-  'TypeScript Basics',
-  'Web Development',
-  'Database Design',
-  'API Development',
-  'DevOps Practices',
-  'Agile Methods',
-  'Software Architecture',
-  'Testing Strategies',
-  'Security Best Practices',
-  'Cloud Computing',
-  'Microservices',
+  'Gaming Mouse',
+  'USB Hub',
+  'Wireless Charger',
+  'Portable Monitor',
+  'USB Microphone',
+  'LED Desk Lamp',
+  'Cable Organizer',
+  'Screen Protector',
+  'Laptop Stand',
+  'Cooling Pad',
+  'External Hard Drive',
+  'Memory Card',
+  'Card Reader',
+  'Ethernet Cable',
+  'DisplayPort Cable',
+  'Thunderbolt Cable',
+  'Audio Interface',
+  'Studio Headphones',
+  'Condenser Microphone',
+  'Pop Filter',
+  'Camera Tripod',
+  'Ring Light',
+  'Green Screen',
+  'Capture Card',
+  'Drawing Tablet',
+  'Stylus Pen',
+  'VR Headset',
+  'Gaming Keyboard',
+  'RGB Mouse Pad',
+  'Streaming Deck',
+  'Docking Station',
+  '4K Webcam',
+  'Conference Speaker',
+  'Noise Cancelling Headphones',
+  'True Wireless Earbuds',
 ];
 const clothingProducts = [
   'Cotton T-Shirt',
@@ -162,6 +180,249 @@ const clothingProducts = [
   'Sweatpants',
   'Beanie',
   'Track Jacket',
+  'Cargo Pants',
+  'Windbreaker',
+  'Tank Top',
+  'Compression Shirt',
+  'Training Shorts',
+  'Yoga Pants',
+  'Fleece Jacket',
+  'Denim Jacket',
+  'Chino Pants',
+  'Graphic Tee',
+  'Long Sleeve Shirt',
+  'Pullover Sweater',
+  'Zip Hoodie',
+  'Joggers',
+  'Board Shorts',
+  'Thermal Underwear',
+  'Rain Jacket',
+  'Puffer Vest',
+  'Henley Shirt',
+  'Button Down Shirt',
+  'Khaki Shorts',
+  'Swim Trunks',
+  'Tank Dress',
+  'Maxi Dress',
+  'Midi Skirt',
+  'Leather Jacket',
+  'Cardigan',
+  'Blazer',
+  'Trench Coat',
+  'Parka',
+  'Combat Boots',
+  'Loafers',
+  'Sandals',
+  'Slides',
+  'High Tops',
+];
+const homeGardenProducts = [
+  'Coffee Maker',
+  'Blender',
+  'Toaster',
+  'Air Fryer',
+  'Slow Cooker',
+  'Vacuum Cleaner',
+  'Robot Vacuum',
+  'Steam Mop',
+  'Iron',
+  'Ironing Board',
+  'Desk Organizer',
+  'Storage Bins',
+  'Bookshelf',
+  'Office Chair',
+  'Standing Desk',
+  'Table Lamp',
+  'Floor Lamp',
+  'Ceiling Fan',
+  'Space Heater',
+  'Tower Fan',
+  'Area Rug',
+  'Throw Pillows',
+  'Curtains',
+  'Blackout Blinds',
+  'Picture Frames',
+  'Wall Clock',
+  'Mirror',
+  'Coat Rack',
+  'Shoe Rack',
+  'Laundry Hamper',
+  'Trash Can',
+  'Recycling Bin',
+  'Step Stool',
+  'Folding Table',
+  'TV Stand',
+  'Plant Pot',
+  'Watering Can',
+  'Garden Tools Set',
+  'Pruning Shears',
+  'Garden Hose',
+  'Lawn Mower',
+  'Hedge Trimmer',
+  'Leaf Blower',
+  'Compost Bin',
+  'Raised Garden Bed',
+  'Outdoor Furniture',
+  'Patio Umbrella',
+  'Fire Pit',
+  'String Lights',
+  'Solar Lights',
+];
+const sportsProducts = [
+  'Yoga Mat',
+  'Resistance Bands',
+  'Dumbbells',
+  'Kettlebell',
+  'Foam Roller',
+  'Jump Rope',
+  'Exercise Ball',
+  'Pull Up Bar',
+  'Push Up Bars',
+  'Ab Wheel',
+  'Weight Bench',
+  'Barbell Set',
+  'Plate Set',
+  'Gym Bag',
+  'Water Bottle',
+  'Protein Shaker',
+  'Workout Gloves',
+  'Lifting Straps',
+  'Wrist Wraps',
+  'Knee Sleeves',
+  'Running Belt',
+  'Arm Band',
+  'Sweat Towel',
+  'Cooling Towel',
+  'Sport Headband',
+  'Basketball',
+  'Football',
+  'Soccer Ball',
+  'Volleyball',
+  'Tennis Racket',
+  'Badminton Set',
+  'Table Tennis Paddle',
+  'Golf Clubs',
+  'Golf Balls',
+  'Golf Bag',
+  'Baseball Glove',
+  'Baseball Bat',
+  'Softball',
+  'Frisbee',
+  'Cornhole Set',
+  'Camping Tent',
+  'Sleeping Bag',
+  'Camping Chair',
+  'Cooler',
+  'Backpack',
+  'Hiking Boots',
+  'Trekking Poles',
+  'Hydration Pack',
+  'Bike Helmet',
+  'Bike Lock',
+];
+const toysGamesProducts = [
+  'Board Game',
+  'Puzzle 1000pc',
+  'Playing Cards',
+  'Dice Set',
+  'Chess Set',
+  'Checkers',
+  'Dominoes',
+  'Jenga',
+  'Uno Cards',
+  'Monopoly',
+  'Scrabble',
+  'Connect Four',
+  'Battleship',
+  'Risk',
+  'Catan',
+  'Action Figure',
+  'Doll House',
+  'RC Car',
+  'Drone',
+  'Nerf Blaster',
+  'LEGO Set',
+  'Building Blocks',
+  'Model Kit',
+  'Paint Set',
+  'Craft Kit',
+  'Coloring Book',
+  'Crayons',
+  'Markers',
+  'Colored Pencils',
+  'Sketch Pad',
+  'Stuffed Animal',
+  'Plush Toy',
+  'Ball Pit Balls',
+  'Play Tent',
+  'Toy Kitchen',
+  'Tool Set Toy',
+  'Doctor Kit',
+  'Science Kit',
+  'Robot Kit',
+  'Microscope',
+  'Telescope',
+  'Binoculars',
+  'Magic Set',
+  'Yo-Yo',
+  'Slime Kit',
+  'Bubble Machine',
+  'Water Guns',
+  'Sand Toys',
+  'Kite',
+  'Skateboard',
+];
+const beautyHealthProducts = [
+  'Face Moisturizer',
+  'Cleanser',
+  'Serum',
+  'Face Mask',
+  'Eye Cream',
+  'Sunscreen SPF50',
+  'Lip Balm',
+  'Hand Cream',
+  'Body Lotion',
+  'Body Wash',
+  'Shampoo',
+  'Conditioner',
+  'Hair Mask',
+  'Hair Oil',
+  'Dry Shampoo',
+  'Hair Dryer',
+  'Straightener',
+  'Curling Iron',
+  'Hair Brush',
+  'Comb',
+  'Nail Polish',
+  'Nail File',
+  'Cuticle Oil',
+  'Manicure Set',
+  'Pedicure Kit',
+  'Electric Toothbrush',
+  'Toothpaste',
+  'Mouthwash',
+  'Floss',
+  'Tongue Scraper',
+  'Face Roller',
+  'Gua Sha',
+  'Facial Steamer',
+  'LED Face Mask',
+  'Massage Gun',
+  'Essential Oil Set',
+  'Diffuser',
+  'Aromatherapy',
+  'Bath Bombs',
+  'Bubble Bath',
+  'Heating Pad',
+  'Ice Pack',
+  'First Aid Kit',
+  'Thermometer',
+  'Blood Pressure Monitor',
+  'Pulse Oximeter',
+  'Humidifier',
+  'Air Purifier',
+  'White Noise Machine',
+  'Sleep Mask',
 ];
 
 function randomElement<T>(arr: T[]): T {
@@ -217,50 +478,96 @@ export async function seedDatabase(): Promise<void> {
 
     console.log(`✓ Created ${users.length} users`);
 
-    // Seed products (75 products)
+    // Seed products (300+ products for performance testing)
     console.log('Seeding products...');
     const products: number[] = [];
 
-    // Electronics (25 products)
-    for (let i = 0; i < 25; i++) {
+    // Electronics (60 products)
+    for (let i = 0; i < 60; i++) {
       const adjective = randomElement(productAdjectives);
       const productName = randomElement(electronicProducts);
       const product = db.createProduct(
-        `${adjective} ${productName}`,
+        `${adjective} ${productName} ${i > 0 ? `v${i}` : ''}`,
         parseFloat((randomNumber(1000, 50000) / 100).toFixed(2)),
         'Electronics',
         `High-quality ${productName.toLowerCase()} with advanced features`,
-        randomNumber(50, 300),
+        randomNumber(500, 2000), // Much higher stock for performance testing
         `https://example.com/images/electronics/${i + 1}.jpg`,
       );
       products.push(product.id);
     }
 
-    // Books (25 products)
-    for (let i = 0; i < 25; i++) {
-      const productName = randomElement(bookProducts);
+    // Clothing (60 products)
+    for (let i = 0; i < 60; i++) {
+      const adjective = randomElement(productAdjectives);
+      const productName = randomElement(clothingProducts);
       const product = db.createProduct(
-        productName,
-        parseFloat((randomNumber(1999, 5999) / 100).toFixed(2)),
-        'Books',
-        `Comprehensive guide to ${productName.toLowerCase()}`,
-        randomNumber(30, 200),
-        `https://example.com/images/books/${i + 1}.jpg`,
+        `${adjective} ${productName} ${i > 0 ? `Style ${i}` : ''}`,
+        parseFloat((randomNumber(1499, 12999) / 100).toFixed(2)),
+        'Clothing',
+        `Comfortable and stylish ${productName.toLowerCase()}`,
+        randomNumber(500, 2000),
+        `https://example.com/images/clothing/${i + 1}.jpg`,
       );
       products.push(product.id);
     }
 
-    // Clothing (25 products)
-    for (let i = 0; i < 25; i++) {
+    // Home & Garden (60 products)
+    for (let i = 0; i < 60; i++) {
       const adjective = randomElement(productAdjectives);
-      const productName = randomElement(clothingProducts);
+      const productName = randomElement(homeGardenProducts);
       const product = db.createProduct(
-        `${adjective} ${productName}`,
-        parseFloat((randomNumber(1499, 12999) / 100).toFixed(2)),
-        'Clothing',
-        `Comfortable and stylish ${productName.toLowerCase()}`,
-        randomNumber(40, 250),
-        `https://example.com/images/clothing/${i + 1}.jpg`,
+        `${adjective} ${productName} ${i > 0 ? `Model ${i}` : ''}`,
+        parseFloat((randomNumber(2999, 29999) / 100).toFixed(2)),
+        'Home & Garden',
+        `Quality ${productName.toLowerCase()} for your home`,
+        randomNumber(300, 1500),
+        `https://example.com/images/home/${i + 1}.jpg`,
+      );
+      products.push(product.id);
+    }
+
+    // Sports & Outdoors (60 products)
+    for (let i = 0; i < 60; i++) {
+      const adjective = randomElement(productAdjectives);
+      const productName = randomElement(sportsProducts);
+      const product = db.createProduct(
+        `${adjective} ${productName} ${i > 0 ? `Pro ${i}` : ''}`,
+        parseFloat((randomNumber(999, 19999) / 100).toFixed(2)),
+        'Sports & Outdoors',
+        `Professional ${productName.toLowerCase()} for athletes`,
+        randomNumber(400, 1800),
+        `https://example.com/images/sports/${i + 1}.jpg`,
+      );
+      products.push(product.id);
+    }
+
+    // Toys & Games (30 products)
+    for (let i = 0; i < 30; i++) {
+      const adjective = randomElement(productAdjectives);
+      const productName = randomElement(toysGamesProducts);
+      const product = db.createProduct(
+        `${adjective} ${productName} ${i > 0 ? `Edition ${i}` : ''}`,
+        parseFloat((randomNumber(999, 9999) / 100).toFixed(2)),
+        'Toys & Games',
+        `Fun and entertaining ${productName.toLowerCase()}`,
+        randomNumber(600, 2500),
+        `https://example.com/images/toys/${i + 1}.jpg`,
+      );
+      products.push(product.id);
+    }
+
+    // Beauty & Health (30 products)
+    for (let i = 0; i < 30; i++) {
+      const adjective = randomElement(productAdjectives);
+      const productName = randomElement(beautyHealthProducts);
+      const product = db.createProduct(
+        `${adjective} ${productName} ${i > 0 ? `Plus ${i}` : ''}`,
+        parseFloat((randomNumber(599, 14999) / 100).toFixed(2)),
+        'Beauty & Health',
+        `Premium ${productName.toLowerCase()} for wellness`,
+        randomNumber(400, 2000),
+        `https://example.com/images/beauty/${i + 1}.jpg`,
       );
       products.push(product.id);
     }

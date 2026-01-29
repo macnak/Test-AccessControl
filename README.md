@@ -15,7 +15,9 @@ A comprehensive Fastify-based TypeScript Web API server designed to test various
 
 - **Shopping Workflow (Cookie Session):**
   - Complete e-commerce simulation for JMeter load testing
-  - SQLite database with 150 test users and 75 products
+  - SQLite database with 150 test users and 300+ products
+  - High stock levels (500-2000 units) for performance testing
+  - Quick restock command for repeated test runs
   - User authentication with login/validate/logout
   - Product catalog with pagination and filtering
   - Shopping cart management
@@ -28,8 +30,10 @@ A comprehensive Fastify-based TypeScript Web API server designed to test various
 - **Database Features:**
   - Embedded SQLite database (zero configuration)
   - Auto-seeding with realistic test data
+  - 300+ products across 6 categories
   - Supports 100+ concurrent users
   - Easy database management CLI
+  - Quick restock for performance testing
   - Credential export for JMeter
   - See [DATABASE.md](DATABASE.md) for details
 
@@ -159,11 +163,14 @@ The server will start on `http://0.0.0.0:3000` by default.
 ### Database Management
 
 ```bash
-# Seed database with test data (150 users, 75 products)
+# Seed database with test data (150 users, 300+ products)
 npm run db:seed
 
 # Reset database (delete and re-seed)
 npm run db:reset
+
+# Restock all products for next performance test run
+npm run db:restock
 
 # Show database statistics
 npm run db:stats

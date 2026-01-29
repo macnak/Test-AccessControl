@@ -57,8 +57,9 @@ npm run db:stats
 ### Database Management
 
 ```bash
-npm run db:seed           # Seed with 150 users, 75 products
+npm run db:seed           # Seed with 150 users, 300+ products
 npm run db:reset          # Delete and re-seed
+npm run db:restock        # Quickly restock all products (between test runs)
 npm run db:stats          # Show statistics
 npm run db:export-users   # Export credentials for JMeter
 ```
@@ -67,9 +68,20 @@ npm run db:export-users   # Export credentials for JMeter
 
 - **Users**: 150 (`user1@example.com` through `user150@example.com`)
 - **Password**: `password123` (all users)
-- **Products**: 75 across Electronics, Clothing, Home & Garden
+- **Products**: 300+ across 6 categories (Electronics, Clothing, Home & Garden, Sports & Outdoors, Toys & Games, Beauty & Health)
+- **Product Stock**: 500-2000 units per product (high levels for performance testing)
 - **Orders**: 20 sample orders
 - **Payment Methods**: 30 saved cards
+
+## Performance Testing Features
+
+**High Stock Levels**: All products seeded with 500-2000 units to support extensive testing
+
+**Quick Restock**: Reset inventory between test runs without re-seeding entire database
+
+```bash
+npm run db:restock  # Restocks all 300+ products in seconds
+```
 
 ## Success Criteria
 

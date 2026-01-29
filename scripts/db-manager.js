@@ -80,13 +80,22 @@ async function main() {
         }
         break;
 
+      case 'restock':
+        console.log('Restocking all products...');
+        const restockDb = getDatabase();
+        const restocked = restockDb.restockAllProducts(500, 2000);
+        console.log(`✓ Restocked ${restocked} products to high levels (500-2000 stock each)`);
+        console.log('Products are ready for performance testing!');
+        break;
+
       case 'help':
       default:
         console.log(`
 Database Management Commands:
 
-  npm run db:seed           - Seed database with test data (150 users, 75 products)
+  npm run db:seed           - Seed database with test data (150 users, 300+ products)
   npm run db:reset          - Reset database (delete all data but keep schema)
+  npm run db:restock        - Restock all products to high levels (500-2000 each)
   npm run db:stats          - Show database statistics
   npm run db:clean-sessions - Clean expired sessions and pending auth
   npm run db:export-users   - Export user credentials to CSV
@@ -98,6 +107,7 @@ Environment Variables:
 
 Examples:
   npm run db:seed
+  npm run db:restock        # Run between performance tests
   DB_PATH=/custom/path npm run db:stats
         `);
         break;
