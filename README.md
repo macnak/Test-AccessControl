@@ -9,6 +9,18 @@ A comprehensive Fastify-based TypeScript Web API server designed to test various
   - API Key (header or query parameter)
   - Bearer Token
   - OAuth2
+  - Cookie Session with Shopping Workflow
+
+- **Shopping Workflow (Cookie Session):**
+  - Complete e-commerce simulation for JMeter load testing
+  - User authentication with login/validate/logout
+  - Product catalog with pagination and filtering
+  - Shopping cart management
+  - Checkout with simulated payment processing
+  - Order history and tracking
+  - User profile management
+  - Payment method management
+  - See [SHOPPING_WORKFLOW.md](SHOPPING_WORKFLOW.md) for detailed documentation
 
 - **Multiple Content Types:**
   - JSON (application/json)
@@ -62,16 +74,21 @@ Test-AccessControl/
 └── README.md
 ```
 
-## Installation
+## Documentation
+
+- **[SHOPPING_WORKFLOW.md](SHOPPING_WORKFLOW.md)** - Complete shopping workflow API documentation
+- **[JMETER_GUIDE.md](JMETER_GUIDE.md)** - Detailed JMeter load testing guide
+- **[CREDENTIALS.md](CREDENTIALS.md)** - Test credentials reference
+- **[VALIDATION_ENDPOINTS.md](VALIDATION_ENDPOINTS.md)** - Validation endpoints documentation
+
+## Quick Start
+
+### Running the Server
 
 ```bash
 # Install dependencies
 npm install
-```
 
-## Running the Application
-
-```bash
 # Development mode (with auto-reload)
 npm run dev
 
@@ -98,6 +115,35 @@ This provides an interactive interface to explore and test all available endpoin
 
 - `GET /api/public/health` - Health check endpoint
 - `GET /api/public/info` - API information
+
+### Cookie Session Endpoints
+
+See [SHOPPING_WORKFLOW.md](SHOPPING_WORKFLOW.md) for complete shopping workflow documentation.
+
+**Authentication:**
+
+- `POST /api/cookie-session/login` - Login with email and password
+- `POST /api/cookie-session/validate` - Validate with token and code
+- `POST /api/cookie-session/logout` - Logout and clear session
+
+**Shopping Workflow:**
+
+- `GET /api/cookie-session/shop/products` - List products with pagination
+- `GET /api/cookie-session/shop/products/:id` - Get product details
+- `GET /api/cookie-session/shop/cart` - Get shopping cart
+- `POST /api/cookie-session/shop/cart` - Add item to cart
+- `PUT /api/cookie-session/shop/cart/:productId` - Update cart item
+- `DELETE /api/cookie-session/shop/cart/:productId` - Remove from cart
+- `DELETE /api/cookie-session/shop/cart` - Clear cart
+- `POST /api/cookie-session/shop/checkout` - Checkout and create order
+- `GET /api/cookie-session/shop/orders` - Get order history
+- `GET /api/cookie-session/shop/orders/:orderId` - Get order details
+- `GET /api/cookie-session/shop/profile` - Get user profile
+- `PUT /api/cookie-session/shop/profile` - Update user profile
+- `GET /api/cookie-session/shop/payment-methods` - Get payment methods
+- `POST /api/cookie-session/shop/payment-methods` - Add payment method
+- `PUT /api/cookie-session/shop/payment-methods/:id` - Update payment method
+- `DELETE /api/cookie-session/shop/payment-methods/:id` - Delete payment method
 
 ### Basic Auth Endpoints
 
@@ -184,6 +230,42 @@ All endpoints under `/api/upload/*` require API Key authentication.
 - `POST /api/upload/single` - Upload a single file
 - `POST /api/upload/multiple` - Upload multiple files
 - `POST /api/upload/with-fields` - Upload files with additional form fields
+
+## Testing the Shopping Workflow
+
+A complete test script is provided to demonstrate the shopping workflow:
+
+```bash
+# Make sure the server is running first
+npm run dev
+
+# In another terminal, run the test script
+./test-shopping-workflow.sh
+```
+
+This script will:
+
+1. Login and validate session
+2. Browse products with pagination
+3. Add products to cart
+4. Update cart quantities
+5. Add payment method
+6. Complete checkout
+7. View order history
+8. Update user profile
+9. Logout
+
+## JMeter Load Testing
+
+For detailed JMeter load testing instructions, see [JMETER_GUIDE.md](JMETER_GUIDE.md).
+
+Quick start:
+
+1. Import `jmeter-users.csv` for test credentials
+2. Configure HTTP Cookie Manager
+3. Follow the business flow: Login → Browse → Cart → Checkout → Logout
+4. Use realistic think times (2-10 seconds between actions)
+5. Apply probability controllers for realistic user behavior
 
 ## Example Usage
 

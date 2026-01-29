@@ -75,6 +75,11 @@ export async function buildApp(): Promise<FastifyInstance> {
         { name: 'Bearer Token', description: 'Endpoints requiring Bearer Token authentication' },
         { name: 'OAuth2', description: 'Endpoints requiring OAuth2 authentication' },
         { name: 'File Upload', description: 'File upload endpoints with multipart/form-data' },
+        { name: 'Cookie Session', description: 'Cookie-based session authentication endpoints' },
+        {
+          name: 'Cookie Session - Shopping',
+          description: 'E-commerce shopping workflow with cookie session',
+        },
       ],
       securityDefinitions: {
         basicAuth: {

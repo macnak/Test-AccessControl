@@ -1,6 +1,16 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { sampleUsers, sampleProducts } from '../config/sample-data';
-import { userAccounts, pendingCookieAuth, validatedSessionCookies } from '../config/credentials';
+import {
+  userAccounts,
+  pendingCookieAuth,
+  validatedSessionCookies,
+  shoppingCarts,
+  paymentMethods,
+  userOrders,
+  sessionToEmail,
+  PaymentMethod,
+  Order,
+} from '../config/credentials';
 import crypto from 'crypto';
 
 interface LoginBody {
@@ -110,6 +120,14 @@ export const cookieSessionController = {
     const sessionId = `session-${crypto.randomBytes(24).toString('hex')}`;
     validatedSessionCookies.add(sessionId);
 
+    // Map session to email for shopping features
+    sessionToEmail.set(sessionId, pending.email);
+
+    // Initialize shopping cart for user
+    if (!shoppingCarts.has(sessionId)) {
+      shoppingCarts.set(sessionId, { items: [] });
+    }
+
     // Clean up pending auth
     pendingCookieAuth.delete(token);
 
@@ -136,6 +154,8 @@ export const cookieSessionController = {
 
     if (sessionCookie) {
       validatedSessionCookies.delete(sessionCookie);
+      shoppingCarts.delete(sessionCookie);
+      sessionToEmail.delete(sessionCookie);
     }
 
     reply.clearCookie('sessionId', { path: '/' });
@@ -794,5 +814,680 @@ export const cookieSessionController = {
 ${metadata}${recordData}</response>`;
 
     return reply.type('application/xml').send(xml);
+  },
+
+  // ========== SHOPPING WORKFLOW ENDPOINTS ==========
+
+  // Get list of products with pagination
+  async getProducts(
+    request: FastifyRequest<{
+      Querystring: {
+        page?: number;
+        limit?: number;
+        category?: string;
+        sortBy?: 'price' | 'name';
+        sortOrder?: 'asc' | 'desc';
+      };
+    }>,
+    reply: FastifyReply,
+  ) {
+    const { page = 1, limit = 10, category, sortBy = 'name', sortOrder = 'asc' } = request.query;
+
+    let products = [...sampleProducts];
+
+    // Filter by category if provided
+    if (category) {
+      products = products.filter((p) => p.category.toLowerCase() === category.toLowerCase());
+    }
+
+    // Sort products
+    products.sort((a, b) => {
+      if (sortBy === 'price') {
+        return sortOrder === 'asc' ? a.price - b.price : b.price - a.price;
+      }
+      return sortOrder === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+    });
+
+    // Pagination
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedProducts = products.slice(startIndex, endIndex);
+
+    return reply.send({
+      success: true,
+      page,
+      limit,
+      totalProducts: products.length,
+      totalPages: Math.ceil(products.length / limit),
+      products: paginatedProducts,
+    });
+  },
+
+  // Get product by ID
+  async getProduct(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+    const productId = parseInt(request.params.id);
+    const product = sampleProducts.find((p) => p.id === productId);
+
+    if (!product) {
+      return reply.code(404).send({
+        success: false,
+        error: 'Not Found',
+        message: `Product with ID ${productId} not found`,
+      });
+    }
+
+    return reply.send({
+      success: true,
+      product,
+    });
+  },
+
+  // Get shopping cart
+  async getCart(request: FastifyRequest, reply: FastifyReply) {
+    const sessionId = request.cookies.sessionId!;
+    const cart = shoppingCarts.get(sessionId) || { items: [] };
+
+    // Enrich cart items with product details
+    const enrichedItems = cart.items.map((item) => {
+      const product = sampleProducts.find((p) => p.id === item.productId);
+      return {
+        ...item,
+        productName: product?.name,
+        productPrice: product?.price,
+        subtotal: product ? product.price * item.quantity : 0,
+      };
+    });
+
+    const total = enrichedItems.reduce((sum, item) => sum + item.subtotal, 0);
+
+    return reply.send({
+      success: true,
+      cart: {
+        items: enrichedItems,
+        itemCount: cart.items.length,
+        totalItems: cart.items.reduce((sum, item) => sum + item.quantity, 0),
+        total: parseFloat(total.toFixed(2)),
+      },
+    });
+  },
+
+  // Add item to cart
+  async addToCart(
+    request: FastifyRequest<{
+      Body: {
+        productId: number;
+        quantity: number;
+      };
+    }>,
+    reply: FastifyReply,
+  ) {
+    const sessionId = request.cookies.sessionId!;
+    const { productId, quantity } = request.body;
+
+    if (!productId || !quantity || quantity < 1) {
+      return reply.code(400).send({
+        success: false,
+        error: 'Bad Request',
+        message: 'Valid productId and quantity (>= 1) are required',
+      });
+    }
+
+    // Verify product exists
+    const product = sampleProducts.find((p) => p.id === productId);
+    if (!product) {
+      return reply.code(404).send({
+        success: false,
+        error: 'Not Found',
+        message: `Product with ID ${productId} not found`,
+      });
+    }
+
+    // Get or create cart
+    let cart = shoppingCarts.get(sessionId);
+    if (!cart) {
+      cart = { items: [] };
+      shoppingCarts.set(sessionId, cart);
+    }
+
+    // Check if item already in cart
+    const existingItem = cart.items.find((item) => item.productId === productId);
+    if (existingItem) {
+      existingItem.quantity += quantity;
+    } else {
+      cart.items.push({
+        productId,
+        quantity,
+        addedAt: new Date().toISOString(),
+      });
+    }
+
+    return reply.send({
+      success: true,
+      message: `Added ${quantity} x ${product.name} to cart`,
+      cart: {
+        itemCount: cart.items.length,
+        totalItems: cart.items.reduce((sum, item) => sum + item.quantity, 0),
+      },
+    });
+  },
+
+  // Update cart item quantity
+  async updateCartItem(
+    request: FastifyRequest<{
+      Params: { productId: string };
+      Body: { quantity: number };
+    }>,
+    reply: FastifyReply,
+  ) {
+    const sessionId = request.cookies.sessionId!;
+    const productId = parseInt(request.params.productId);
+    const { quantity } = request.body;
+
+    if (!quantity || quantity < 0) {
+      return reply.code(400).send({
+        success: false,
+        error: 'Bad Request',
+        message: 'Valid quantity (>= 0) is required',
+      });
+    }
+
+    const cart = shoppingCarts.get(sessionId);
+    if (!cart) {
+      return reply.code(404).send({
+        success: false,
+        error: 'Not Found',
+        message: 'Cart not found',
+      });
+    }
+
+    const itemIndex = cart.items.findIndex((item) => item.productId === productId);
+    if (itemIndex === -1) {
+      return reply.code(404).send({
+        success: false,
+        error: 'Not Found',
+        message: `Product ${productId} not in cart`,
+      });
+    }
+
+    if (quantity === 0) {
+      // Remove item from cart
+      cart.items.splice(itemIndex, 1);
+      return reply.send({
+        success: true,
+        message: 'Item removed from cart',
+      });
+    }
+
+    cart.items[itemIndex].quantity = quantity;
+
+    return reply.send({
+      success: true,
+      message: 'Cart item updated',
+      item: cart.items[itemIndex],
+    });
+  },
+
+  // Remove item from cart
+  async removeFromCart(
+    request: FastifyRequest<{ Params: { productId: string } }>,
+    reply: FastifyReply,
+  ) {
+    const sessionId = request.cookies.sessionId!;
+    const productId = parseInt(request.params.productId);
+
+    const cart = shoppingCarts.get(sessionId);
+    if (!cart) {
+      return reply.code(404).send({
+        success: false,
+        error: 'Not Found',
+        message: 'Cart not found',
+      });
+    }
+
+    const itemIndex = cart.items.findIndex((item) => item.productId === productId);
+    if (itemIndex === -1) {
+      return reply.code(404).send({
+        success: false,
+        error: 'Not Found',
+        message: `Product ${productId} not in cart`,
+      });
+    }
+
+    cart.items.splice(itemIndex, 1);
+
+    return reply.send({
+      success: true,
+      message: 'Item removed from cart',
+    });
+  },
+
+  // Clear cart
+  async clearCart(request: FastifyRequest, reply: FastifyReply) {
+    const sessionId = request.cookies.sessionId!;
+    shoppingCarts.set(sessionId, { items: [] });
+
+    return reply.send({
+      success: true,
+      message: 'Cart cleared',
+    });
+  },
+
+  // Checkout - create order
+  async checkout(
+    request: FastifyRequest<{
+      Body: {
+        paymentMethodId?: string;
+        shippingAddress?: string;
+      };
+    }>,
+    reply: FastifyReply,
+  ) {
+    const sessionId = request.cookies.sessionId!;
+    const email = sessionToEmail.get(sessionId);
+
+    if (!email) {
+      return reply.code(401).send({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Session email not found',
+      });
+    }
+
+    const cart = shoppingCarts.get(sessionId);
+    if (!cart || cart.items.length === 0) {
+      return reply.code(400).send({
+        success: false,
+        error: 'Bad Request',
+        message: 'Cart is empty',
+      });
+    }
+
+    const user = userAccounts.find((u) => u.email === email);
+    const { paymentMethodId, shippingAddress } = request.body;
+
+    // Calculate order details
+    const orderItems = cart.items.map((item) => {
+      const product = sampleProducts.find((p) => p.id === item.productId)!;
+      return {
+        productId: item.productId,
+        productName: product.name,
+        quantity: item.quantity,
+        price: product.price,
+      };
+    });
+
+    const total = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+    // Create order
+    const orderId = `ORD-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+    const order: Order = {
+      orderId,
+      userId: email,
+      items: orderItems,
+      total: parseFloat(total.toFixed(2)),
+      status: 'processing',
+      paymentMethod: paymentMethodId || 'default',
+      shippingAddress: shippingAddress || user?.address || 'No address provided',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Store order
+    const orders = userOrders.get(email) || [];
+    orders.push(order);
+    userOrders.set(email, orders);
+
+    // Clear cart after successful checkout
+    shoppingCarts.set(sessionId, { items: [] });
+
+    // Simulate payment processing
+    setTimeout(() => {
+      order.status = 'completed';
+      order.updatedAt = new Date().toISOString();
+    }, 100);
+
+    return reply.send({
+      success: true,
+      message: 'Order placed successfully',
+      order: {
+        orderId: order.orderId,
+        total: order.total,
+        status: order.status,
+        estimatedDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+    });
+  },
+
+  // Get order history
+  async getOrderHistory(
+    request: FastifyRequest<{
+      Querystring: {
+        page?: number;
+        limit?: number;
+        status?: string;
+      };
+    }>,
+    reply: FastifyReply,
+  ) {
+    const sessionId = request.cookies.sessionId!;
+    const email = sessionToEmail.get(sessionId);
+
+    if (!email) {
+      return reply.code(401).send({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Session email not found',
+      });
+    }
+
+    const { page = 1, limit = 10, status } = request.query;
+
+    let orders = userOrders.get(email) || [];
+
+    // Filter by status if provided
+    if (status) {
+      orders = orders.filter((o) => o.status === status);
+    }
+
+    // Sort by date (newest first)
+    orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    // Pagination
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedOrders = orders.slice(startIndex, endIndex);
+
+    return reply.send({
+      success: true,
+      page,
+      limit,
+      totalOrders: orders.length,
+      totalPages: Math.ceil(orders.length / limit),
+      orders: paginatedOrders,
+    });
+  },
+
+  // Get order by ID
+  async getOrder(request: FastifyRequest<{ Params: { orderId: string } }>, reply: FastifyReply) {
+    const sessionId = request.cookies.sessionId!;
+    const email = sessionToEmail.get(sessionId);
+
+    if (!email) {
+      return reply.code(401).send({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Session email not found',
+      });
+    }
+
+    const orders = userOrders.get(email) || [];
+    const order = orders.find((o) => o.orderId === request.params.orderId);
+
+    if (!order) {
+      return reply.code(404).send({
+        success: false,
+        error: 'Not Found',
+        message: 'Order not found',
+      });
+    }
+
+    return reply.send({
+      success: true,
+      order,
+    });
+  },
+
+  // Get user profile
+  async getProfile(request: FastifyRequest, reply: FastifyReply) {
+    const sessionId = request.cookies.sessionId!;
+    const email = sessionToEmail.get(sessionId);
+
+    if (!email) {
+      return reply.code(401).send({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Session email not found',
+      });
+    }
+
+    const user = userAccounts.find((u) => u.email === email);
+
+    if (!user) {
+      return reply.code(404).send({
+        success: false,
+        error: 'Not Found',
+        message: 'User not found',
+      });
+    }
+
+    return reply.send({
+      success: true,
+      profile: {
+        email: user.email,
+        name: user.name,
+        address: user.address,
+        phone: user.phone,
+      },
+    });
+  },
+
+  // Update user profile
+  async updateProfile(
+    request: FastifyRequest<{
+      Body: {
+        name?: string;
+        address?: string;
+        phone?: string;
+      };
+    }>,
+    reply: FastifyReply,
+  ) {
+    const sessionId = request.cookies.sessionId!;
+    const email = sessionToEmail.get(sessionId);
+
+    if (!email) {
+      return reply.code(401).send({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Session email not found',
+      });
+    }
+
+    const user = userAccounts.find((u) => u.email === email);
+
+    if (!user) {
+      return reply.code(404).send({
+        success: false,
+        error: 'Not Found',
+        message: 'User not found',
+      });
+    }
+
+    const { name, address, phone } = request.body;
+
+    if (name) user.name = name;
+    if (address) user.address = address;
+    if (phone) user.phone = phone;
+
+    return reply.send({
+      success: true,
+      message: 'Profile updated successfully',
+      profile: {
+        email: user.email,
+        name: user.name,
+        address: user.address,
+        phone: user.phone,
+      },
+    });
+  },
+
+  // Get payment methods
+  async getPaymentMethods(request: FastifyRequest, reply: FastifyReply) {
+    const sessionId = request.cookies.sessionId!;
+    const email = sessionToEmail.get(sessionId);
+
+    if (!email) {
+      return reply.code(401).send({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Session email not found',
+      });
+    }
+
+    const methods = paymentMethods.get(email) || [];
+
+    return reply.send({
+      success: true,
+      paymentMethods: methods,
+    });
+  },
+
+  // Add payment method
+  async addPaymentMethod(
+    request: FastifyRequest<{
+      Body: {
+        type: 'credit_card' | 'debit_card' | 'paypal';
+        last4?: string;
+        expiryMonth?: number;
+        expiryYear?: number;
+        isDefault?: boolean;
+      };
+    }>,
+    reply: FastifyReply,
+  ) {
+    const sessionId = request.cookies.sessionId!;
+    const email = sessionToEmail.get(sessionId);
+
+    if (!email) {
+      return reply.code(401).send({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Session email not found',
+      });
+    }
+
+    const { type, last4, expiryMonth, expiryYear, isDefault = false } = request.body;
+
+    if (!type) {
+      return reply.code(400).send({
+        success: false,
+        error: 'Bad Request',
+        message: 'Payment method type is required',
+      });
+    }
+
+    const methods = paymentMethods.get(email) || [];
+
+    // If this is set as default, unset other defaults
+    if (isDefault) {
+      methods.forEach((m) => (m.isDefault = false));
+    }
+
+    const newMethod: PaymentMethod = {
+      id: `pm-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
+      type,
+      last4,
+      expiryMonth,
+      expiryYear,
+      isDefault: isDefault || methods.length === 0, // First method is default
+    };
+
+    methods.push(newMethod);
+    paymentMethods.set(email, methods);
+
+    return reply.send({
+      success: true,
+      message: 'Payment method added successfully',
+      paymentMethod: newMethod,
+    });
+  },
+
+  // Update payment method
+  async updatePaymentMethod(
+    request: FastifyRequest<{
+      Params: { paymentMethodId: string };
+      Body: {
+        isDefault?: boolean;
+        expiryMonth?: number;
+        expiryYear?: number;
+      };
+    }>,
+    reply: FastifyReply,
+  ) {
+    const sessionId = request.cookies.sessionId!;
+    const email = sessionToEmail.get(sessionId);
+
+    if (!email) {
+      return reply.code(401).send({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Session email not found',
+      });
+    }
+
+    const methods = paymentMethods.get(email) || [];
+    const method = methods.find((m) => m.id === request.params.paymentMethodId);
+
+    if (!method) {
+      return reply.code(404).send({
+        success: false,
+        error: 'Not Found',
+        message: 'Payment method not found',
+      });
+    }
+
+    const { isDefault, expiryMonth, expiryYear } = request.body;
+
+    if (isDefault !== undefined) {
+      if (isDefault) {
+        methods.forEach((m) => (m.isDefault = false));
+      }
+      method.isDefault = isDefault;
+    }
+
+    if (expiryMonth) method.expiryMonth = expiryMonth;
+    if (expiryYear) method.expiryYear = expiryYear;
+
+    return reply.send({
+      success: true,
+      message: 'Payment method updated successfully',
+      paymentMethod: method,
+    });
+  },
+
+  // Delete payment method
+  async deletePaymentMethod(
+    request: FastifyRequest<{ Params: { paymentMethodId: string } }>,
+    reply: FastifyReply,
+  ) {
+    const sessionId = request.cookies.sessionId!;
+    const email = sessionToEmail.get(sessionId);
+
+    if (!email) {
+      return reply.code(401).send({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Session email not found',
+      });
+    }
+
+    const methods = paymentMethods.get(email) || [];
+    const methodIndex = methods.findIndex((m) => m.id === request.params.paymentMethodId);
+
+    if (methodIndex === -1) {
+      return reply.code(404).send({
+        success: false,
+        error: 'Not Found',
+        message: 'Payment method not found',
+      });
+    }
+
+    methods.splice(methodIndex, 1);
+    paymentMethods.set(email, methods);
+
+    return reply.send({
+      success: true,
+      message: 'Payment method deleted successfully',
+    });
   },
 };

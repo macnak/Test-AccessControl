@@ -1151,5 +1151,518 @@ export default async function cookieSessionRoutes(fastify: FastifyInstance) {
       getValidateXmlSchema,
       cookieSessionController.getValidateXml,
     );
+
+    // ========== SHOPPING WORKFLOW ROUTES ==========
+
+    // Product catalog routes
+    authenticatedRoutes.get(
+      '/shop/products',
+      {
+        schema: {
+          description: 'Get list of products with pagination and filtering',
+          tags: ['Cookie Session - Shopping'],
+          querystring: {
+            type: 'object',
+            properties: {
+              page: { type: 'number', minimum: 1, default: 1 },
+              limit: { type: 'number', minimum: 1, maximum: 100, default: 10 },
+              category: { type: 'string' },
+              sortBy: { type: 'string', enum: ['price', 'name'], default: 'name' },
+              sortOrder: { type: 'string', enum: ['asc', 'desc'], default: 'asc' },
+            },
+          },
+          response: {
+            200: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                page: { type: 'number' },
+                limit: { type: 'number' },
+                totalProducts: { type: 'number' },
+                totalPages: { type: 'number' },
+                products: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'number' },
+                      name: { type: 'string' },
+                      price: { type: 'number' },
+                      category: { type: 'string' },
+                      description: { type: 'string' },
+                      stock: { type: 'number' },
+                      imageUrl: { type: 'string' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      cookieSessionController.getProducts,
+    );
+
+    authenticatedRoutes.get(
+      '/shop/products/:id',
+      {
+        schema: {
+          description: 'Get product details by ID',
+          tags: ['Cookie Session - Shopping'],
+          params: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+            },
+            required: ['id'],
+          },
+          response: {
+            200: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                product: { type: 'object' },
+              },
+            },
+            404: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                error: { type: 'string' },
+                message: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+      cookieSessionController.getProduct,
+    );
+
+    // Shopping cart routes
+    authenticatedRoutes.get(
+      '/shop/cart',
+      {
+        schema: {
+          description: 'Get current shopping cart',
+          tags: ['Cookie Session - Shopping'],
+          response: {
+            200: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                cart: {
+                  type: 'object',
+                  properties: {
+                    items: { type: 'array' },
+                    itemCount: { type: 'number' },
+                    totalItems: { type: 'number' },
+                    total: { type: 'number' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      cookieSessionController.getCart,
+    );
+
+    authenticatedRoutes.post(
+      '/shop/cart',
+      {
+        schema: {
+          description: 'Add item to shopping cart',
+          tags: ['Cookie Session - Shopping'],
+          body: {
+            type: 'object',
+            required: ['productId', 'quantity'],
+            properties: {
+              productId: { type: 'number' },
+              quantity: { type: 'number', minimum: 1 },
+            },
+          },
+          response: {
+            200: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                message: { type: 'string' },
+                cart: { type: 'object' },
+              },
+            },
+            400: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                error: { type: 'string' },
+                message: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+      cookieSessionController.addToCart,
+    );
+
+    authenticatedRoutes.put(
+      '/shop/cart/:productId',
+      {
+        schema: {
+          description: 'Update cart item quantity',
+          tags: ['Cookie Session - Shopping'],
+          params: {
+            type: 'object',
+            properties: {
+              productId: { type: 'string' },
+            },
+            required: ['productId'],
+          },
+          body: {
+            type: 'object',
+            required: ['quantity'],
+            properties: {
+              quantity: { type: 'number', minimum: 0 },
+            },
+          },
+          response: {
+            200: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                message: { type: 'string' },
+                item: { type: 'object' },
+              },
+            },
+          },
+        },
+      },
+      cookieSessionController.updateCartItem,
+    );
+
+    authenticatedRoutes.delete(
+      '/shop/cart/:productId',
+      {
+        schema: {
+          description: 'Remove item from cart',
+          tags: ['Cookie Session - Shopping'],
+          params: {
+            type: 'object',
+            properties: {
+              productId: { type: 'string' },
+            },
+            required: ['productId'],
+          },
+          response: {
+            200: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                message: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+      cookieSessionController.removeFromCart,
+    );
+
+    authenticatedRoutes.delete(
+      '/shop/cart',
+      {
+        schema: {
+          description: 'Clear shopping cart',
+          tags: ['Cookie Session - Shopping'],
+          response: {
+            200: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                message: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+      cookieSessionController.clearCart,
+    );
+
+    // Checkout route
+    authenticatedRoutes.post(
+      '/shop/checkout',
+      {
+        schema: {
+          description: 'Checkout and create order',
+          tags: ['Cookie Session - Shopping'],
+          body: {
+            type: 'object',
+            properties: {
+              paymentMethodId: { type: 'string' },
+              shippingAddress: { type: 'string' },
+            },
+          },
+          response: {
+            200: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                message: { type: 'string' },
+                order: { type: 'object' },
+              },
+            },
+            400: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                error: { type: 'string' },
+                message: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+      cookieSessionController.checkout,
+    );
+
+    // Order history routes
+    authenticatedRoutes.get(
+      '/shop/orders',
+      {
+        schema: {
+          description: 'Get order history',
+          tags: ['Cookie Session - Shopping'],
+          querystring: {
+            type: 'object',
+            properties: {
+              page: { type: 'number', minimum: 1, default: 1 },
+              limit: { type: 'number', minimum: 1, maximum: 100, default: 10 },
+              status: { type: 'string', enum: ['pending', 'processing', 'completed', 'cancelled'] },
+            },
+          },
+          response: {
+            200: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                page: { type: 'number' },
+                limit: { type: 'number' },
+                totalOrders: { type: 'number' },
+                totalPages: { type: 'number' },
+                orders: { type: 'array' },
+              },
+            },
+          },
+        },
+      },
+      cookieSessionController.getOrderHistory,
+    );
+
+    authenticatedRoutes.get(
+      '/shop/orders/:orderId',
+      {
+        schema: {
+          description: 'Get order details by ID',
+          tags: ['Cookie Session - Shopping'],
+          params: {
+            type: 'object',
+            properties: {
+              orderId: { type: 'string' },
+            },
+            required: ['orderId'],
+          },
+          response: {
+            200: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                order: { type: 'object' },
+              },
+            },
+            404: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                error: { type: 'string' },
+                message: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+      cookieSessionController.getOrder,
+    );
+
+    // User profile routes
+    authenticatedRoutes.get(
+      '/shop/profile',
+      {
+        schema: {
+          description: 'Get user profile',
+          tags: ['Cookie Session - Shopping'],
+          response: {
+            200: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                profile: {
+                  type: 'object',
+                  properties: {
+                    email: { type: 'string' },
+                    name: { type: 'string' },
+                    address: { type: 'string' },
+                    phone: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      cookieSessionController.getProfile,
+    );
+
+    authenticatedRoutes.put(
+      '/shop/profile',
+      {
+        schema: {
+          description: 'Update user profile',
+          tags: ['Cookie Session - Shopping'],
+          body: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              address: { type: 'string' },
+              phone: { type: 'string' },
+            },
+          },
+          response: {
+            200: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                message: { type: 'string' },
+                profile: { type: 'object' },
+              },
+            },
+          },
+        },
+      },
+      cookieSessionController.updateProfile,
+    );
+
+    // Payment methods routes
+    authenticatedRoutes.get(
+      '/shop/payment-methods',
+      {
+        schema: {
+          description: 'Get payment methods',
+          tags: ['Cookie Session - Shopping'],
+          response: {
+            200: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                paymentMethods: { type: 'array' },
+              },
+            },
+          },
+        },
+      },
+      cookieSessionController.getPaymentMethods,
+    );
+
+    authenticatedRoutes.post(
+      '/shop/payment-methods',
+      {
+        schema: {
+          description: 'Add payment method',
+          tags: ['Cookie Session - Shopping'],
+          body: {
+            type: 'object',
+            required: ['type'],
+            properties: {
+              type: { type: 'string', enum: ['credit_card', 'debit_card', 'paypal'] },
+              last4: { type: 'string' },
+              expiryMonth: { type: 'number', minimum: 1, maximum: 12 },
+              expiryYear: { type: 'number' },
+              isDefault: { type: 'boolean' },
+            },
+          },
+          response: {
+            200: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                message: { type: 'string' },
+                paymentMethod: { type: 'object' },
+              },
+            },
+          },
+        },
+      },
+      cookieSessionController.addPaymentMethod,
+    );
+
+    authenticatedRoutes.put(
+      '/shop/payment-methods/:paymentMethodId',
+      {
+        schema: {
+          description: 'Update payment method',
+          tags: ['Cookie Session - Shopping'],
+          params: {
+            type: 'object',
+            properties: {
+              paymentMethodId: { type: 'string' },
+            },
+            required: ['paymentMethodId'],
+          },
+          body: {
+            type: 'object',
+            properties: {
+              isDefault: { type: 'boolean' },
+              expiryMonth: { type: 'number', minimum: 1, maximum: 12 },
+              expiryYear: { type: 'number' },
+            },
+          },
+          response: {
+            200: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                message: { type: 'string' },
+                paymentMethod: { type: 'object' },
+              },
+            },
+          },
+        },
+      },
+      cookieSessionController.updatePaymentMethod,
+    );
+
+    authenticatedRoutes.delete(
+      '/shop/payment-methods/:paymentMethodId',
+      {
+        schema: {
+          description: 'Delete payment method',
+          tags: ['Cookie Session - Shopping'],
+          params: {
+            type: 'object',
+            properties: {
+              paymentMethodId: { type: 'string' },
+            },
+            required: ['paymentMethodId'],
+          },
+          response: {
+            200: {
+              type: 'object',
+              properties: {
+                success: { type: 'boolean' },
+                message: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+      cookieSessionController.deletePaymentMethod,
+    );
   });
 }
