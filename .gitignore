@@ -10,4 +10,5 @@ data/*.db
 data/*.db-wal
 data/*.db-shm
 data/users-export.csv
+data/products-export.csv
 *.backup

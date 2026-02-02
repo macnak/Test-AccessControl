@@ -1045,6 +1045,24 @@ export default async function cookieSessionRoutes(fastify: FastifyInstance) {
     cookieSessionController.exportCredentials,
   );
 
+  // Public products export endpoint (for JMeter testing)
+  fastify.get(
+    '/products/export',
+    {
+      schema: {
+        description: 'Export products catalog for JMeter testing',
+        tags: ['Cookie Session'],
+        response: {
+          200: {
+            type: 'string',
+            description: 'CSV file with product catalog',
+          },
+        },
+      },
+    },
+    cookieSessionController.exportProducts,
+  );
+
   // Protected endpoints (with cookie session middleware)
   fastify.register(async (authenticatedRoutes) => {
     authenticatedRoutes.addHook('preHandler', cookieSessionMiddleware);
@@ -1239,7 +1257,20 @@ export default async function cookieSessionRoutes(fastify: FastifyInstance) {
               type: 'object',
               properties: {
                 success: { type: 'boolean' },
-                product: { type: 'object' },
+                product: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'number' },
+                    name: { type: 'string' },
+                    description: { type: 'string' },
+                    price: { type: 'number' },
+                    category: { type: 'string' },
+                    stock: { type: 'number' },
+                    image_url: { type: 'string' },
+                    created_at: { type: 'string' },
+                    updated_at: { type: 'string' },
+                  },
+                },
               },
             },
             404: {
@@ -1271,7 +1302,20 @@ export default async function cookieSessionRoutes(fastify: FastifyInstance) {
                 cart: {
                   type: 'object',
                   properties: {
-                    items: { type: 'array' },
+                    items: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          productId: { type: 'number' },
+                          quantity: { type: 'number' },
+                          addedAt: { type: 'string' },
+                          productName: { type: 'string' },
+                          productPrice: { type: 'number' },
+                          subtotal: { type: 'number' },
+                        },
+                      },
+                    },
                     itemCount: { type: 'number' },
                     totalItems: { type: 'number' },
                     total: { type: 'number' },
@@ -1305,7 +1349,28 @@ export default async function cookieSessionRoutes(fastify: FastifyInstance) {
               properties: {
                 success: { type: 'boolean' },
                 message: { type: 'string' },
-                cart: { type: 'object' },
+                cart: {
+                  type: 'object',
+                  properties: {
+                    items: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          productId: { type: 'number' },
+                          quantity: { type: 'number' },
+                          addedAt: { type: 'string' },
+                          productName: { type: 'string' },
+                          productPrice: { type: 'number' },
+                          subtotal: { type: 'number' },
+                        },
+                      },
+                    },
+                    itemCount: { type: 'number' },
+                    totalItems: { type: 'number' },
+                    total: { type: 'number' },
+                  },
+                },
               },
             },
             400: {

@@ -15,6 +15,7 @@
         "db:stats": "npm run build && node scripts/db-manager.js stats",
         "db:clean-sessions": "npm run build && node scripts/db-manager.js clean-sessions",
         "db:export-users": "npm run build && node scripts/db-manager.js export-users",
+        "db:export-products": "npm run build && node scripts/db-manager.js export-products",
         "db:delete": "node scripts/db-manager.js delete",
         "db:help": "node scripts/db-manager.js help"
     },

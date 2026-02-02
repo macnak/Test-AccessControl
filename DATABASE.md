@@ -199,6 +199,9 @@ npm run db:clean-sessions
 # Export user credentials to CSV
 npm run db:export-users
 
+# Export products to CSV (for JMeter cart/purchase testing)
+npm run db:export-products
+
 # Delete database completely
 npm run db:delete
 
@@ -249,13 +252,49 @@ For JMeter load testing, export user credentials:
 npm run db:export-users
 ```
 
-Creates `users-export.csv`:
+Creates `data/users-export.csv`:
 
 ```csv
-email,password,userId
-user1@example.com,password123,1
-user2@example.com,password123,2
+email,password,name
+user1@example.com,password123,"Michelle Moore"
+user2@example.com,password123,"Thomas Brown"
 ...
+```
+
+Or use the API endpoint:
+
+```bash
+GET /api/cookie-session/credentials/export
+```
+
+### Product Catalog Export
+
+For JMeter cart and purchase testing, export all products:
+
+```bash
+npm run db:export-products
+```
+
+Creates `data/products-export.csv`:
+
+```csv
+productId,name,category,price,stock
+1,"Premium Wireless Headphones",Electronics,299.99,1523
+2,"Classic Bluetooth Speaker v1",Electronics,89.99,1847
+...
+```
+
+**Use in JMeter:**
+
+- Use CSV Data Set Config to read `products-export.csv`
+- Variables: `productId,name,category,price,stock`
+- Randomize product selection for cart operations
+- Use actual product IDs for realistic testing
+
+Or use the API endpoint:
+
+```bash
+GET /api/cookie-session/products/export
 ```
 
 Or use the API endpoint:

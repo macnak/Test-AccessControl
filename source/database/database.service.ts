@@ -251,6 +251,12 @@ class DatabaseService {
     return result.changes;
   }
 
+  // Get all products for export (no pagination)
+  getAllProducts(): DbProduct[] {
+    const stmt = this.db.prepare('SELECT * FROM products ORDER BY category, name');
+    return stmt.all() as DbProduct[];
+  }
+
   // Session operations
   createSession(id: string, userId: number, email: string, expiresAt: Date): DbSession {
     const stmt = this.db.prepare(`

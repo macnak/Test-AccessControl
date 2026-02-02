@@ -944,12 +944,29 @@ ${metadata}${recordData}</response>`;
     db.addToCart(sessionId, productId, quantity);
     const cartItems = db.getCart(sessionId);
 
+    // Enrich cart items with product details
+    const enrichedItems = cartItems.map((item) => {
+      const prod = db.getProductById(item.product_id);
+      return {
+        productId: item.product_id,
+        quantity: item.quantity,
+        addedAt: item.added_at,
+        productName: prod?.name,
+        productPrice: prod?.price,
+        subtotal: prod ? prod.price * item.quantity : 0,
+      };
+    });
+
+    const total = enrichedItems.reduce((sum, item) => sum + item.subtotal, 0);
+
     return reply.send({
       success: true,
       message: `Added ${quantity} x ${product.name} to cart`,
       cart: {
+        items: enrichedItems,
         itemCount: cartItems.length,
         totalItems: cartItems.reduce((sum, item) => sum + item.quantity, 0),
+        total: parseFloat(total.toFixed(2)),
       },
     });
   },
@@ -1435,6 +1452,21 @@ ${metadata}${recordData}</response>`;
     return reply
       .header('Content-Type', 'text/csv')
       .header('Content-Disposition', 'attachment; filename="users-credentials.csv"')
+      .send(csvContent);
+  },
+
+  // Export products for JMeter testing
+  exportProducts: async (_request: FastifyRequest, reply: FastifyReply) => {
+    const db = getDatabase();
+    const products = db.getAllProducts();
+
+    const csvContent =
+      'productId,name,category,price,stock\n' +
+      products.map((p) => `${p.id},"${p.name}",${p.category},${p.price},${p.stock}`).join('\n');
+
+    return reply
+      .header('Content-Type', 'text/csv')
+      .header('Content-Disposition', 'attachment; filename="products.csv"')
       .send(csvContent);
   },
 };

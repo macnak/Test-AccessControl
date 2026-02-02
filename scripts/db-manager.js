@@ -59,6 +59,19 @@ async function main() {
         console.log(`✓ Exported ${users.length} users to: ${outputPath}`);
         break;
 
+      case 'export-products':
+        console.log('Exporting products...');
+        const productsDb = getDatabase();
+        const products = productsDb.getAllProducts();
+        const productsCsv =
+          'productId,name,category,price,stock\n' +
+          products.map((p) => `${p.id},"${p.name}",${p.category},${p.price},${p.stock}`).join('\n');
+
+        const productsPath = path.join(process.cwd(), 'data', 'products-export.csv');
+        fs.writeFileSync(productsPath, productsCsv, 'utf-8');
+        console.log(`✓ Exported ${products.length} products to: ${productsPath}`);
+        break;
+
       case 'delete':
         console.log('Deleting database file...');
         const dataDir = process.env.DB_PATH || path.join(process.cwd(), 'data');
@@ -93,21 +106,23 @@ async function main() {
         console.log(`
 Database Management Commands:
 
-  npm run db:seed           - Seed database with test data (150 users, 300+ products)
-  npm run db:reset          - Reset database (delete all data but keep schema)
-  npm run db:restock        - Restock all products to high levels (500-2000 each)
-  npm run db:stats          - Show database statistics
-  npm run db:clean-sessions - Clean expired sessions and pending auth
-  npm run db:export-users   - Export user credentials to CSV
-  npm run db:delete         - Delete database file (fresh start)
-  npm run db:help           - Show this help message
+  npm run db:seed            - Seed database with test data (150 users, 300+ products)
+  npm run db:reset           - Reset database (delete all data but keep schema)
+  npm run db:restock         - Restock all products to high levels (500-2000 each)
+  npm run db:stats           - Show database statistics
+  npm run db:clean-sessions  - Clean expired sessions and pending auth
+  npm run db:export-users    - Export user credentials to CSV
+  npm run db:export-products - Export products to CSV (for JMeter testing)
+  npm run db:delete          - Delete database file (fresh start)
+  npm run db:help            - Show this help message
 
 Environment Variables:
-  DB_PATH                   - Custom database path (default: ./data)
+  DB_PATH                    - Custom database path (default: ./data)
 
 Examples:
   npm run db:seed
-  npm run db:restock        # Run between performance tests
+  npm run db:export-products  # Use in JMeter for cart/purchase testing
+  npm run db:restock          # Run between performance tests
   DB_PATH=/custom/path npm run db:stats
         `);
         break;

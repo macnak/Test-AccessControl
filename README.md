@@ -178,6 +178,9 @@ npm run db:stats
 # Export user credentials for JMeter
 npm run db:export-users
 
+# Export products for JMeter (cart/purchase testing)
+npm run db:export-products
+
 # Clean expired sessions
 npm run db:clean-sessions
 
