@@ -1644,7 +1644,23 @@ export default async function cookieSessionRoutes(fastify: FastifyInstance) {
               type: 'object',
               properties: {
                 success: { type: 'boolean' },
-                paymentMethods: { type: 'array' },
+                paymentMethods: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string' },
+                      user_id: { type: 'number' },
+                      type: { type: 'string', enum: ['credit_card', 'debit_card', 'paypal'] },
+                      last4: { type: 'string' },
+                      expiry_month: { type: 'number' },
+                      expiry_year: { type: 'number' },
+                      is_default: { type: 'number' },
+                      created_at: { type: 'string' },
+                      updated_at: { type: 'string' },
+                    },
+                  },
+                },
               },
             },
           },
@@ -1676,7 +1692,20 @@ export default async function cookieSessionRoutes(fastify: FastifyInstance) {
               properties: {
                 success: { type: 'boolean' },
                 message: { type: 'string' },
-                paymentMethod: { type: 'object' },
+                paymentMethod: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string' },
+                    user_id: { type: 'number' },
+                    type: { type: 'string', enum: ['credit_card', 'debit_card', 'paypal'] },
+                    last4: { type: 'string' },
+                    expiry_month: { type: 'number' },
+                    expiry_year: { type: 'number' },
+                    is_default: { type: 'number' },
+                    created_at: { type: 'string' },
+                    updated_at: { type: 'string' },
+                  },
+                },
               },
             },
           },
