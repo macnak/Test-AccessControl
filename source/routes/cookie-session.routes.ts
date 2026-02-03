@@ -1489,7 +1489,37 @@ export default async function cookieSessionRoutes(fastify: FastifyInstance) {
               properties: {
                 success: { type: 'boolean' },
                 message: { type: 'string' },
-                order: { type: 'object' },
+                order: {
+                  type: 'object',
+                  properties: {
+                    orderId: { type: 'string' },
+                    userId: { type: 'number' },
+                    total: { type: 'number' },
+                    status: {
+                      type: 'string',
+                      enum: ['pending', 'processing', 'completed', 'cancelled'],
+                    },
+                    paymentMethod: { type: 'string' },
+                    shippingAddress: { type: 'string' },
+                    items: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          productId: { type: 'number' },
+                          productName: { type: 'string' },
+                          quantity: { type: 'number' },
+                          price: { type: 'number' },
+                          subtotal: { type: 'number' },
+                        },
+                      },
+                    },
+                    itemCount: { type: 'number' },
+                    totalItems: { type: 'number' },
+                    estimatedDelivery: { type: 'string' },
+                    createdAt: { type: 'string' },
+                  },
+                },
               },
             },
             400: {

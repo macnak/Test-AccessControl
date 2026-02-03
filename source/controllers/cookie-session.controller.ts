@@ -1105,6 +1105,9 @@ ${metadata}${recordData}</response>`;
     // Clear cart after successful checkout
     db.clearCart(sessionId);
 
+    // Get order items for response
+    const dbOrderItems = db.getOrderItems(orderId);
+
     // Simulate payment processing
     setTimeout(() => {
       db.updateOrderStatus(orderId, 'completed');
@@ -1115,9 +1118,22 @@ ${metadata}${recordData}</response>`;
       message: 'Order placed successfully',
       order: {
         orderId: order.id,
+        userId: order.user_id,
         total: order.total,
         status: order.status,
+        paymentMethod: order.payment_method,
+        shippingAddress: order.shipping_address,
+        items: dbOrderItems.map((item) => ({
+          productId: item.product_id,
+          productName: item.product_name,
+          quantity: item.quantity,
+          price: item.price,
+          subtotal: item.price * item.quantity,
+        })),
+        itemCount: dbOrderItems.length,
+        totalItems: dbOrderItems.reduce((sum, item) => sum + item.quantity, 0),
         estimatedDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        createdAt: order.created_at,
       },
     });
   },
