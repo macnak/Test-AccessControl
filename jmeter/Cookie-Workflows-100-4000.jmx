@@ -760,7 +760,7 @@ if (tg01_delay &gt; 0) {
           <hashTree/>
         </hashTree>
       </hashTree>
-      <kg.apc.jmeter.threads.UltimateThreadGroup guiclass="kg.apc.jmeter.threads.UltimateThreadGroupGui" testclass="kg.apc.jmeter.threads.UltimateThreadGroup" testname="UTG01-Purchase">
+      <kg.apc.jmeter.threads.UltimateThreadGroup guiclass="kg.apc.jmeter.threads.UltimateThreadGroupGui" testclass="kg.apc.jmeter.threads.UltimateThreadGroup" testname="UTG01-Purchase" enabled="true">
         <collectionProp name="ultimatethreadgroupdata">
           <collectionProp name="-1197277851">
             <stringProp name="48625">100</stringProp>
@@ -839,7 +839,7 @@ if (tg01_delay &gt; 0) {
           <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
         </ConfigTestElement>
         <hashTree/>
-        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TG01-Purchase">
+        <TransactionController guiclass="TransactionControllerGui" testclass="TransactionController" testname="TG01-Purchase" enabled="true">
           <boolProp name="TransactionController.includeTimers">false</boolProp>
         </TransactionController>
         <hashTree>
@@ -1453,7 +1453,7 @@ if (tg01_delay &gt; 0) {
               <subresults>true</subresults>
               <responseData>false</responseData>
               <samplerData>false</samplerData>
-              <xml>false</xml>
+              <xml>true</xml>
               <fieldNames>true</fieldNames>
               <responseHeaders>false</responseHeaders>
               <requestHeaders>false</requestHeaders>
